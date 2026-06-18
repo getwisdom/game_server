@@ -231,13 +231,16 @@ function calcScores(ply,pcs){const scores=[];const allGreen=[];
   return r;}
 
 // ====== 截图 ======
-let gameSS=[];
-function ss(msg){try{const el=document.getElementById('gameUI');if(!el||!window.html2canvas)return;
+let gameSS=[],_ssRound=null;
+function ss(msg){try{
+  const rnd=state?.round;
+  if(_ssRound===rnd)return; // 每轮只截一次
+  _ssRound=rnd;
+  const el=document.getElementById('gameUI');if(!el||!window.html2canvas)return;
   html2canvas(el,{scale:2,backgroundColor:'#1a1a2e',useCORS:true,allowTaint:true,logging:false}).then(c=>{
     const url=c.toDataURL('image/png');
-    if(gameSS.length>=2)gameSS.shift();
-    gameSS.push({msg,url,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
-    document.getElementById('ssCount').textContent=gameSS.length;
+    gameSS=[{msg,url,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}]; // 只保留最后一次
+    document.getElementById('ssCount').textContent=1;
     document.getElementById('galleryBtn').style.display='';
   }).catch(()=>{});}catch(e){}
 }
