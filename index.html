@@ -165,7 +165,9 @@ function createRoom(){
   const nick=document.getElementById('nickInput').value.trim()||'玩家';
   localStorage.setItem(LS_NICK,nick);
   const mode=document.getElementById('modeSel').value;
-  send('createRoom',{name:nick,mode});
+  const m=parseFloat(document.getElementById('multiInput').value)||1;
+  localStorage.setItem(LS_MULTI,String(m));
+  send('createRoom',{name:nick,mode,multi:m});
 }
 function joinRoom(){
   const nick=document.getElementById('nickInput').value.trim()||'玩家';
@@ -179,7 +181,7 @@ function renderState(){
   if(!state)return;const area=document.getElementById('gameArea');
   const myName=state.ply[myIndex]?.n||'';
   const inHistory=state.historyPos>=0;
-  document.getElementById('statusBar').innerHTML=`<span class="dot">🟢</span> ${myName} <span style="color:rgba(255,255,255,0.2);margin:0 6px">|</span> <span style="color:${COLORS[myIndex%5]||'#ffd200'}">房间 ${roomCode}</span> <span style="color:rgba(255,255,255,0.15)">倍率${myMulti}</span>`;
+  document.getElementById('statusBar').innerHTML=`<span class="dot">🟢</span> ${myName} <span style="color:rgba(255,255,255,0.2);margin:0 6px">|</span> <span style="color:${COLORS[myIndex%5]||'#ffd200'}">房间 ${roomCode}</span> ${state.multi&&state.multi!==1?`<span style="color:rgba(255,255,255,0.15)">倍率${state.multi}</span>`:''}`;
   const lv=state.lightVotes||[];
   const isVoting=!state.lit&&state.done&&lv.length>0&&!inHistory;
   document.getElementById('btnA').disabled=state.done&&!state.lit||inHistory;
@@ -203,8 +205,9 @@ function renderState(){
   for(let ii=0;ii<order.length;ii++){
     const i=order[ii],p=state.ply[i],tc=COLORS[i%5],need=state.pcs[i]||0,isMe=myIndex===i;
     const cum=(state.cum[i]||0)+rs[i];
-    const st=isMe?Math.round(cum*myMulti*100)/100:null;
-    html+=`<div class="pblock${isMe?' me':''}"><div class="pheader"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="pname" style="color:${tc}">${p.n}</div>${isMe?'<span class="tag-me">👈 你</span>':''}<div class="pscore">当局: <span class="n">${rs[i]>=0?'+'+rs[i]:rs[i]}</span></div><div class="pscore">累计: <span class="n2">${cum}</span>${st!==null?` <span class="st">小计:${st}</span>`:''}</div></div><div class="grid">`;
+    const showST=state.lit&&state.multi;
+    const stVal=showST?Math.round(cum*state.multi*100)/100:null;
+    html+=`<div class="pblock${isMe?' me':''}"><div class="pheader"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="pname" style="color:${tc}">${p.n}</div>${isMe?'<span class="tag-me">👈 你</span>':''}<div class="pscore">当局: <span class="n">${rs[i]>=0?'+'+rs[i]:rs[i]}</span></div><div class="pscore">累计: <span class="n2">${cum}</span>${stVal!==null?` <span class="st">小计:${stVal}</span>`:''}</div></div><div class="grid">`;
     for(let si=0;si<need+4;si++){
       const val=p.s[si],cl=p.cs[si]||'em';let d='·';
       if(val!==undefined&&val!==null){if(si<need)d=(state.lit||isMe)?val:'?';else d=val;}

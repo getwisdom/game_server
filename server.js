@@ -36,7 +36,7 @@ function genCode(){let c;do{c=String(rd(1000,9999));}while(rooms.has(c));return 
 function newRoom(mode){
   const c=MODE[mode];
   return {
-    mode,ply:[],pcs:[],round:0,assignCount:0,cum:[],
+    mode,ply:[],pcs:[],round:0,assignCount:0,cum:[],multi:1,
     done:false,lit:false,ended:false,history:[],historyPos:-1,
     _liveBackup:null,
   };
@@ -124,7 +124,7 @@ function handleMessage(client, msg) {
     case 'createRoom': {
       const mode=msg.mode||'mode2';const code=genCode();
       const st=newRoom(mode);initPlayers(st);
-      st.ply[0].n=msg.name||DFLT[0];
+      st.ply[0].n=msg.name||DFLT[0];st.multi=parseFloat(msg.multi)||1;
       rooms.set(code,st);
       client.roomCode=code;client.playerIndex=0;
       client.ws.send(JSON.stringify({type:'joined',roomCode:code,playerIndex:0,state:stateForClient(code)}));
