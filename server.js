@@ -42,9 +42,25 @@ function newRoom(mode){
   };
 }
 
-function broadcast(room,msg){
+function broadcast(room, msg, optForPlayer){
   if(typeof msg==='object')msg=JSON.stringify(msg);
-  clients.forEach((v,ws)=>{if(v.roomCode===room){try{ws.send(msg);}catch(e){}}});
+  clients.forEach((v,ws)=>{if(v.roomCode===room){
+    let m=msg;
+    if(optForPlayer===undefined&&typeof msg==='string'){
+      try{
+        const parsed=JSON.parse(msg);
+        if(parsed.type==='state'&&parsed.state){
+          // 亮号前给每个玩家个性化（隐藏非自己的数字格颜色）
+          const st=rooms.get(room);
+          if(st&&!st.lit){
+            const masked=stateForClient(room,v.playerIndex);
+            m=JSON.stringify({type:'state',state:masked});
+          }
+        }
+      }catch(e){}
+    }
+    try{ws.send(m);}catch(e){}
+  }});
 }
 
 function stateForClient(room, forPlayer){
@@ -155,11 +171,11 @@ function handleMessage(client, msg) {
     case 'toggleCell':
       if(!rc)return;if(msg.playerIndex!==client.playerIndex)return;
       toggleCell(rooms.get(rc),msg.playerIndex,msg.cellIndex);
-      // 自己对调者发送真实状态，其他玩家隐藏数字格颜色
-      clients.forEach((v,ws)=>{if(v.roomCode===rc){
-        const isSelf=ws===client.ws;
-        try{ws.send(JSON.stringify({type:'state',state:stateForClient(rc,isSelf?v.playerIndex:-1)}));}catch(e){}
-      }});break;
+      // 自己发完整状态，其他玩家通过broadcast自动隐藏
+      {const st=rooms.get(rc);
+        try{client.ws.send(JSON.stringify({type:'state',state:stateForClient(rc,client.playerIndex)}));}catch(e){}
+        broadcast(rc,{type:'state',state:stateForClient(rc)});
+      }break;
     case 'assign':
       if(!rc)return;doAssign(rooms.get(rc));
       broadcast(rc,{type:'state',state:stateForClient(rc)});break;
