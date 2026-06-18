@@ -133,8 +133,7 @@ function fbCell(el){
 function connect(){
   const saved=localStorage.getItem(LS_NICK);
   if(saved)document.getElementById('nickInput').value=saved;
-  const sm=localStorage.getItem(LS_MULTI);
-  if(sm)document.getElementById('multiInput').value=sm;
+
   ws=new WebSocket(getWsUrl());
   ws.onopen=()=>{document.getElementById('lobbyMsg').textContent='';};
   ws.onmessage=e=>handleMsg(JSON.parse(e.data));
