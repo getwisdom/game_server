@@ -164,6 +164,8 @@ function handleMessage(client, msg) {
       if(pi===-1){client.ws.send(JSON.stringify({type:'err',msg:'房间已满'}));return;}
       client.roomCode=code;client.playerIndex=pi;
       st.ply[pi].n=msg.name||DFLT[pi];
+      // 有人回来了，取消空房清理定时器
+      if(st._emptyTimer){clearTimeout(st._emptyTimer);st._emptyTimer=null;}
       client.ws.send(JSON.stringify({type:'joined',roomCode:code,playerIndex:pi,state:stateForClient(code)}));
       broadcast(code,{type:'state',state:stateForClient(code)});
       break;
@@ -207,8 +209,13 @@ wss.on('connection',(ws)=>{
     if(rc&&rooms.has(rc)){
       // 检查房间是否还有人
       const hasPlayer=Array.from(clients.values()).some(v=>v.roomCode===rc);
-      if(!hasPlayer)rooms.delete(rc);
-      else broadcast(rc,{type:'state',state:stateForClient(rc)});
+      if(!hasPlayer){
+        // 没人了，但保留房间，30分钟后清理
+        if(!rooms.get(rc)._emptyTimer)
+          rooms.get(rc)._emptyTimer=setTimeout(()=>{rooms.delete(rc);},30*60*1000);
+      }else{
+        broadcast(rc,{type:'state',state:stateForClient(rc)});
+      }
     }
   });
 });
