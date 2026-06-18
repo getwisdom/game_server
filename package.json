@@ -1,0 +1,12 @@
+{
+  "name": "number-game",
+  "version": "1.0.0",
+  "description": "多人数字分配互动游戏",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}

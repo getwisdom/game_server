@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>台麻游戏</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(160deg,#0f0c29,#302b63,#24243e);min-height:100vh;min-height:100dvh;display:flex;justify-content:center;color:#fff;padding:8px 0 20px 0;}
+  .gc{width:100%;max-width:420px;padding:10px 12px;}
+  h1{text-align:center;font-size:18px;font-weight:700;background:linear-gradient(90deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:2px;}
+  .sub{text-align:center;color:rgba(255,255,255,0.18);font-size:9px;margin-bottom:8px;}
+  .mode-sel{width:100%;padding:8px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='rgba(255,255,255,0.4)'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:10px 6px;}
+  .mode-sel:focus{border-color:#f7971e;}.mode-sel option{background:#1a1a2e;color:#fff;}
+  .btn-row{display:flex;gap:5px;margin-bottom:8px;}
+  .btn-row .btn{flex:1;padding:10px 3px;border-radius:8px;font-size:12px;font-weight:600;text-align:center;border:none;cursor:pointer;transition:all 0.1s;white-space:nowrap;}
+  .btn-row .btn:active{transform:scale(0.95);opacity:0.85;}
+  .btn-a{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;}
+  .btn-l{background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;}
+  .btn-p{background:linear-gradient(135deg,#4facfe,#00f2fe);color:#1a1a2e;}
+  .btn-n{background:linear-gradient(135deg,#43e97b,#38f9d7);color:#1a1a2e;}
+  .btn-row .btn:disabled{opacity:0.2;transform:none!important;}
+  .pb{margin-top:4px;}
+  .pblock{background:rgba(255,255,255,0.06);border-radius:10px;padding:8px 10px;margin-bottom:6px;border:1px solid rgba(255,255,255,0.12);}
+  .pblock.me{border-color:#f7971e;box-shadow:0 0 8px rgba(247,151,30,0.2);}
+  .pheader{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
+  .pheader .pname{font-size:13px;font-weight:600;}
+  .pheader .pscore{font-size:12px;color:rgba(255,255,255,0.45);}
+  .pheader .pscore .n{color:#ffd200;font-weight:600;}
+  .pheader .pscore .n2{color:#6bcb77;font-weight:600;}
+  .pheader .tag-me{font-size:10px;color:rgba(255,255,255,0.3);}
+  .ptag{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+  .grid{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;}
+  .cell{aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.08s;border:1px solid rgba(255,255,255,0.06);-webkit-user-select:none;user-select:none;}
+  .cell:active{transform:scale(0.9);}
+  .cell.bk{background:rgba(255,255,255,0.85);color:#1a1a2e;border-color:rgba(255,255,255,0.3);}
+  .cell.gr{background:rgba(100,220,100,0.22);color:#64dc64;border-color:rgba(100,220,100,0.18);}
+  .cell.gy{background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.3);border-color:rgba(255,255,255,0.05);}
+  .cell.rd{background:rgba(255,100,100,0.15);color:#ff6464;border-color:rgba(255,100,100,0.15);}
+  .cell.yl{background:rgba(255,220,50,0.15);color:#ffdc32;border-color:rgba(255,220,50,0.15);}
+  .cell.em{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);border-color:rgba(255,255,255,0.1);}
+  .cell.locked{cursor:default;}.cell.locked:active{transform:none;}
+  .msg{padding:6px 8px;border-radius:6px;margin:5px 0;font-size:12px;line-height:1.3;}
+  .msg.info{background:rgba(100,180,255,0.05);border-left:2px solid #64b4ff;}
+  .msg.success{background:rgba(100,220,100,0.05);border-left:2px solid #64dc64;}
+  .status-bar{text-align:center;font-size:11px;color:rgba(255,255,255,0.25);padding:4px 0;margin-bottom:6px;}
+  .status-bar .dot{color:#6bcb77;}
+  .lobby{text-align:center;padding:14px 0;}
+  .lobby h2{font-size:15px;margin-bottom:10px;color:rgba(255,255,255,0.5);}
+  .lobby-row{display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:6px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);cursor:pointer;}
+  .lobby-row .ptag{width:24px;height:24px;font-size:11px;flex-shrink:0;}
+  .lobby-row .lobby-name{font-size:14px;font-weight:500;flex:1;text-align:left;}
+  .lobby-row .lobby-nick{flex:1;}
+  .lobby-row .lobby-nick input{width:100%;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#fff;outline:none;cursor:text;}
+  .lobby-row .lobby-nick input:focus{border-color:#f7971e;}
+  .lobby-row .lobby-status{font-size:11px;flex-shrink:0;}
+  .lobby-join{display:block;width:100%;padding:12px;margin-top:6px;border-radius:10px;font-size:15px;font-weight:600;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;cursor:pointer;}
+  .lobby-join:active{transform:scale(0.96);}
+  .lobby-join:disabled{opacity:0.25;}
+  .hdr{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px;}
+  .hdr-tag{font-size:11px;padding:2px 8px;border-radius:4px;}
+  .hdr-tag.hist{background:rgba(255,200,50,0.15);color:#ffc832;}
+  #ssOverlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+  #ssOverlay .box{background:rgba(0,0,0,0.75);color:#fff;padding:16px 24px;border-radius:12px;font-size:14px;font-weight:600;}
+  #lightbox{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;cursor:pointer;}
+  #lightbox img{max-width:95vw;max-height:95vh;border-radius:8px;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+let gameSS=[];
+function ss(msg){try{const el=document.getElementById('gameUI');if(!el||!window.html2canvas)return;
+  html2canvas(el,{scale:2,backgroundColor:'#1a1a2e',useCORS:true,allowTaint:true,logging:false}).then(c=>{
+    const url=c.toDataURL('image/png');
+    if(gameSS.length>=2)gameSS.shift();
+    gameSS.push({msg,url,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
+    document.getElementById('ssCount').textContent=gameSS.length;
+    document.getElementById('galleryBtn').style.display='';
+  }).catch(()=>{});}catch(e){}
+}
+function toggleGallery(){const g=document.getElementById('gallery');g.style.display=g.style.display==='none'?'':'none';renderGallery();}
+function renderGallery(){const g=document.getElementById('gallery');if(g.style.display==='none')return;
+  let h='<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:6px">点击截图放大，再点关闭</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">';
+  for(let i=gameSS.length-1;i>=0;i--){const s=gameSS[i];
+    h+=`<div style="cursor:pointer;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)" onclick="showSS('${s.url}')"><img src="${s.url}" style="width:100%;display:block"><div style="font-size:9px;color:rgba(255,255,255,0.3);text-align:center;padding:2px">${s.msg} ${s.time}</div></div>`;}
+  h+='</div>';g.innerHTML=h;}
+function showSS(url){document.getElementById('lbImg').src=url;document.getElementById('lightbox').style.display='flex';}
+</script>
+</head>
+<body>
+<div class="gc" id="app">
+  <h1>🎮 台麻游戏</h1>
+  <p class="sub">数字点黑/绿 0号点红/+1分 黄/-2分 灰/0分</p>
+  <div id="lobby"></div>
+  <div id="gameUI" style="display:none">
+    <div class="status-bar" id="statusBar"></div>
+    <div class="btn-row">
+      <button class="btn btn-a" id="btnA" onclick="send('assign')" disabled>分配</button>
+      <button class="btn btn-l" id="btnL" onclick="send('light')" disabled>亮号</button>
+      <button class="btn btn-p" id="btnP" onclick="ss('上局_第'+(state.round||0)+'局');send('prev')" disabled>上局</button>
+      <button class="btn btn-n" id="btnN" onclick="ss('下局_第'+(state.round||0)+'局');send('next')" disabled>下局</button>
+    </div>
+    <div id="gameArea"></div>
+    <div id="galleryBtn" style="text-align:center;margin:6px 0;display:none">
+      <button onclick="toggleGallery()" style="background:none;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.4);padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer">📷 查看截图 (<span id="ssCount">0</span>)</button>
+    </div>
+    <div id="gallery" style="display:none;padding:4px 0"></div>
+  </div>
+  <div id="lightbox" onclick="this.style.display='none'"><img id="lbImg" src=""></div>
+</div>
+
+<script>
+const COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#a78bfa'];
+const DFLT=['玩家一','玩家二','玩家三','玩家四','玩家五'];
+let ws=null,myIndex=-1,state=null;
+const LS_IDX='taiMaPlayerIdx',LS_NICK='taiMaNick_';
+function getWsUrl(){const p=window.location;return(p.protocol==='https:'?'wss:':'ws:')+'//'+p.host;}
+function connect(){ws=new WebSocket(getWsUrl());ws.onopen=()=>{};ws.onmessage=e=>handleMsg(JSON.parse(e.data));ws.onclose=()=>{document.getElementById('statusBar').textContent='⚠️ 断开'};}
+function send(m,ex){if(!ws||ws.readyState!==1)return;ws.send(JSON.stringify(typeof m==='string'?Object.assign({type:m},ex||{}):m));}
+function handleMsg(msg){
+  switch(msg.type){
+    case 'lobby':renderLobby(msg);break;
+    case 'joined':myIndex=msg.playerIndex;state=msg.state;document.getElementById('lobby').style.display='none';document.getElementById('gameUI').style.display='';renderState();window.scrollTo(0,0);break;
+    case 'state':state=msg.state;if(document.getElementById('gameUI').style.display!=='none')renderState();else renderLobbyFromState();break;
+    case 'err':alert(msg.msg);break;
+  }
+}
+function renderLobby(msg){
+  const c=MODE[msg.mode||'mode2'].count;const names=msg.ply||DFLT.slice(0,c);const occupied=msg.occupied||{};const lsIdx=localStorage.getItem(LS_IDX);
+  let h='<div class="lobby"><h2>选择模式与身份</h2><select class="mode-sel" id="lobbyMode" onchange="onLobbyModeChange()">';
+  for(const[k,v]of Object.entries(MODE))h+=`<option value="${k}" ${k===(msg.mode||'mode2')?'selected':''}>${v.count}人模式</option>`;
+  h+='</select><div style="height:10px"></div>';
+  for(let i=0;i<c;i++){const tc=COLORS[i%5],taken=!!occupied[i],savedNick=localStorage.getItem(LS_NICK+i)||names[i]||DFLT[i],isMySlot=lsIdx&&parseInt(lsIdx)===i;
+    h+=`<div class="lobby-row" data-idx="${i}" style="${isMySlot?'border-color:#f7971e;':''}"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="lobby-name" style="color:${taken?'rgba(255,255,255,0.3)':tc}">${names[i]}</div><div class="lobby-nick"><input id="lobbyNick${i}" value="${savedNick}" placeholder="输入昵称" maxlength="6" ${taken?'disabled':''} onclick="event.stopPropagation()"></div><div class="lobby-status" style="color:${taken?'rgba(255,255,255,0.3)':'#6bcb77'}">${taken?'已有人':'可选'}</div></div>`;}
+  h+='<button class="lobby-join" id="lobbyBtn" onclick="doJoin()">进入游戏</button><div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.2)">点击玩家行选择身份，再点进入</div></div>';
+  document.getElementById('lobby').innerHTML=h;document.getElementById('lobby').style.display='';
+  document.querySelectorAll('.lobby-row').forEach(r=>{r.addEventListener('click',function(){const idx=parseInt(this.dataset.idx);localStorage.setItem(LS_IDX,idx);document.querySelectorAll('.lobby-row').forEach(x=>x.style.borderColor='rgba(255,255,255,0.08)');this.style.borderColor='#f7971e';});});
+}
+function renderLobbyFromState(){if(!state)return;renderLobby({occupied:state.occupied||{},mode:state.mode||'mode2',ply:state.ply.map(p=>p.n)});}
+function onLobbyModeChange(){send('modeChange',{mode:document.getElementById('lobbyMode').value});}
+function doJoin(){
+  let idx=localStorage.getItem(LS_IDX);if(idx===null){alert('请先选择一个玩家');return;}idx=parseInt(idx);
+  const c=state?state.ply.length:4;if(idx<0||idx>=c){alert('无效玩家');return;}
+  const nickEl=document.getElementById('lobbyNick'+idx);if(!nickEl){alert('请先选择一个玩家');return;}
+  const nick=nickEl.value.trim()||DFLT[idx];localStorage.setItem(LS_NICK+idx,nick);send('joinPlayer',{playerIndex:idx,name:nick});
+}
+function renderState(){
+  if(!state)return;const area=document.getElementById('gameArea');
+  const myName=state.ply[myIndex]?.n||DFLT[myIndex]||'';
+  const inHistory=state.historyPos>=0;
+  document.getElementById('statusBar').innerHTML=`<span class="dot">🟢</span> 你的身份: <strong>${myName}</strong>`;
+  const lv=state.lightVotes||[];
+  const isVoting=!state.lit&&state.done&&lv.length>0&&!inHistory;
+  // 分配：亮号后可用；历史模式禁用
+  document.getElementById('btnA').disabled=state.done&&!state.lit||inHistory;
+  // 亮号：需要2人投票；历史模式禁用
+  document.getElementById('btnL').disabled=!state.done||state.lit||lv.length>=2||inHistory;
+  // 上局：有历史且不在最旧一条
+  document.getElementById('btnP').disabled=state.history.length===0||state.historyPos===0;
+  // 下局：不在历史模式时禁用
+  document.getElementById('btnN').disabled=state.historyPos===-1;
+  if(isVoting){
+    let h='<div style="text-align:center;padding:20px 0">';
+    h+=`<div style="font-size:15px;font-weight:600;color:#f093fb;margin-bottom:6px">👆 亮号确认中</div>`;
+    h+=`<div style="font-size:13px;color:rgba(255,255,255,0.5)">${lv.length}/2 玩家已确认亮号</div>`;
+    h+=`<div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.2)">需要2位不同玩家按「亮号」按钮</div>`;
+    for(let i=0;i<state.ply.length;i++){const tc=COLORS[i%5],voted=lv.includes(i),isMe=myIndex===i;
+      h+=`<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 0;${voted?'opacity:0.5':''}"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><span style="font-size:13px;font-weight:500">${state.ply[i].n}</span><span style="font-size:13px">${voted?'✅ 已确认':(isMe?'👇 等你就绪':'⏳')}</span></div>`;}
+    h+='</div>';area.innerHTML=h;return;
+  }
+  let html='';
+  // 历史模式提示
+  if(inHistory)html+=`<div class="hdr"><span class="hdr-tag hist">📜 历史状态 - 第${state.round}局</span></div>`;
+  html+='<div class="pb">';
+  const rs=calcScores(state.ply,state.pcs);
+  const order=Array.from({length:state.ply.length},(_,i)=>i).filter(i=>i!==myIndex);order.unshift(myIndex);
+  for(let ii=0;ii<order.length;ii++){
+    const i=order[ii],p=state.ply[i],tc=COLORS[i%5],need=state.pcs[i]||0,isMe=myIndex===i;
+    html+=`<div class="pblock${isMe?' me':''}"><div class="pheader"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="pname" style="color:${tc}">${p.n}</div>${isMe?'<span class="tag-me">👈 你</span>':''}<div class="pscore">当局: <span class="n">${rs[i]>=0?'+'+rs[i]:rs[i]}</span></div><div class="pscore">累计: <span class="n2">${(state.cum[i]||0)+rs[i]}</span></div></div><div class="grid">`;
+    for(let si=0;si<need+4;si++){
+      const val=p.s[si],cl=p.cs[si]||'em';let d='·';
+      if(val!==undefined&&val!==null){if(si<need)d=(state.lit||isMe)?val:'?';else d=val;}
+      const canClick=state.done&&isMe&&!inHistory;
+      html+=`<div class="cell ${cl}${canClick?'':' locked'}" onclick="${canClick?'send(\'toggleCell\',{playerIndex:'+i+',cellIndex:'+si+'})':''}">${d}</div>`;
+    }
+    html+='</div></div>';
+  }
+  html+='</div>';
+  html+=`<div style="text-align:center;padding:4px 0;font-size:11px;color:rgba(255,255,255,0.3)">🎲 已分配 ${state.assignCount} 次</div>`;
+  let msg=inHistory?'⬆️ 点「上局」「下局」浏览历史':!state.done?'点击「分配」发牌':!state.lit?'需2位玩家按「亮号」':'点「分配」下一轮';
+  html+=`<div class="msg ${inHistory?'info':!state.done?'info':'success'}">${msg}</div>`;
+  area.innerHTML=html;
+}
+function calcScores(ply,pcs){const scores=[];const allGreen=[];
+  for(let i=0;i<ply.length;i++){const p=ply[i];const need=pcs[i]||0;let bk=0,rd=0,yl=0,hB=false;
+    for(let si=0;si<need+4;si++){if(si<need){if(p.cs[si]==='bk'){bk++;hB=true;}}else{
+      if(p.cs[si]==='rd'){rd++;}else if(p.cs[si]==='yl'){yl++;}
+    }}allGreen[i]=!hB;scores[i]={bk,rd,yl};}
+  const r=[];
+  for(let i=0;i<ply.length;i++){if(!allGreen[i])r[i]=-scores[i].bk+scores[i].rd-2*scores[i].yl;}
+  for(let i=0;i<ply.length;i++){if(allGreen[i]){let o=0;for(let j=0;j<ply.length;j++)if(j!==i)o+=r[j]||0;r[i]=-o;}}
+  return r;}
+const MODE={mode1:{count:3,base:[5,5,5]},mode2:{count:4,base:[3,4,4,4]},mode3:{count:5,base:[3,3,3,3,3]}};
+connect();
+</script>
+</body>
+</html>
