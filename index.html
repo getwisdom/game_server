@@ -10,8 +10,6 @@
   .gc{width:100%;max-width:420px;padding:10px 12px;}
   h1{text-align:center;font-size:18px;font-weight:700;background:linear-gradient(90deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:2px;}
   .sub{text-align:center;color:rgba(255,255,255,0.18);font-size:9px;margin-bottom:8px;}
-  .mode-sel{width:100%;padding:8px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='rgba(255,255,255,0.4)'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:10px 6px;}
-  .mode-sel:focus{border-color:#f7971e;}.mode-sel option{background:#1a1a2e;color:#fff;}
   .btn-row{display:flex;gap:5px;margin-bottom:8px;}
   .btn-row .btn{flex:1;padding:10px 3px;border-radius:8px;font-size:12px;font-weight:600;text-align:center;border:none;cursor:pointer;transition:all 0.1s;white-space:nowrap;}
   .btn-row .btn:active{transform:scale(0.95);opacity:0.85;}
@@ -44,60 +42,49 @@
   .msg.info{background:rgba(100,180,255,0.05);border-left:2px solid #64b4ff;}
   .msg.success{background:rgba(100,220,100,0.05);border-left:2px solid #64dc64;}
   .status-bar{text-align:center;font-size:11px;color:rgba(255,255,255,0.25);padding:4px 0;margin-bottom:6px;}
-  .status-bar .dot{color:#6bcb77;}
-  .lobby{text-align:center;padding:14px 0;}
-  .lobby h2{font-size:15px;margin-bottom:10px;color:rgba(255,255,255,0.5);}
-  .lobby-row{display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:6px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);cursor:pointer;}
-  .lobby-row .ptag{width:24px;height:24px;font-size:11px;flex-shrink:0;}
-  .lobby-row .lobby-name{font-size:14px;font-weight:500;flex:1;text-align:left;}
-  .lobby-row .lobby-nick{flex:1;}
-  .lobby-row .lobby-nick input{width:100%;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#fff;outline:none;cursor:text;}
-  .lobby-row .lobby-nick input:focus{border-color:#f7971e;}
-  .lobby-row .lobby-status{font-size:11px;flex-shrink:0;}
-  .lobby-join{display:block;width:100%;padding:12px;margin-top:6px;border-radius:10px;font-size:15px;font-weight:600;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;cursor:pointer;}
-  .lobby-join:active{transform:scale(0.96);}
-  .lobby-join:disabled{opacity:0.25;}
   .hdr{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px;}
   .hdr-tag{font-size:11px;padding:2px 8px;border-radius:4px;}
   .hdr-tag.hist{background:rgba(255,200,50,0.15);color:#ffc832;}
-  #ssOverlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;}
-  #ssOverlay .box{background:rgba(0,0,0,0.75);color:#fff;padding:16px 24px;border-radius:12px;font-size:14px;font-weight:600;}
+  .hdr-tag.rc{background:rgba(100,180,255,0.15);color:#64b4ff;}
   #lightbox{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;cursor:pointer;}
   #lightbox img{max-width:95vw;max-height:95vh;border-radius:8px;}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script>
-let gameSS=[];
-function ss(msg){try{const el=document.getElementById('gameUI');if(!el||!window.html2canvas)return;
-  html2canvas(el,{scale:2,backgroundColor:'#1a1a2e',useCORS:true,allowTaint:true,logging:false}).then(c=>{
-    const url=c.toDataURL('image/png');
-    if(gameSS.length>=2)gameSS.shift();
-    gameSS.push({msg,url,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
-    document.getElementById('ssCount').textContent=gameSS.length;
-    document.getElementById('galleryBtn').style.display='';
-  }).catch(()=>{});}catch(e){}
-}
-function toggleGallery(){const g=document.getElementById('gallery');g.style.display=g.style.display==='none'?'':'none';renderGallery();}
-function renderGallery(){const g=document.getElementById('gallery');if(g.style.display==='none')return;
-  let h='<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:6px">点击截图放大，再点关闭</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">';
-  for(let i=gameSS.length-1;i>=0;i--){const s=gameSS[i];
-    h+=`<div style="cursor:pointer;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)" onclick="showSS('${s.url}')"><img src="${s.url}" style="width:100%;display:block"><div style="font-size:9px;color:rgba(255,255,255,0.3);text-align:center;padding:2px">${s.msg} ${s.time}</div></div>`;}
-  h+='</div>';g.innerHTML=h;}
-function showSS(url){document.getElementById('lbImg').src=url;document.getElementById('lightbox').style.display='flex';}
-</script>
 </head>
 <body>
 <div class="gc" id="app">
   <h1>🎮 台麻游戏</h1>
   <p class="sub">数字点黑/绿 0号点红/+1分 黄/-2分 灰/0分</p>
-  <div id="lobby"></div>
+  <div id="lobbyUI">
+    <div style="padding:20px 0">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:rgba(255,255,255,0.5)">你的昵称</div>
+      <input id="nickInput" value="" maxlength="6" style="width:100%;padding:12px;border-radius:10px;font-size:16px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;outline:none;text-align:center" placeholder="输入昵称">
+      <div style="height:16px"></div>
+      <select id="modeSel" style="width:100%;padding:12px;border-radius:10px;font-size:14px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;outline:none;appearance:none;-webkit-appearance:none;text-align:center;text-align-last:center;">
+        <option value="mode2">4人模式</option>
+        <option value="mode1">3人模式</option>
+        <option value="mode3">5人模式</option>
+      </select>
+      <div style="height:16px"></div>
+      <button onclick="createRoom()" style="width:100%;padding:14px;border-radius:12px;font-size:16px;font-weight:700;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;cursor:pointer;transition:all 0.1s">🏠 创建房间</button>
+      <div style="display:flex;align-items:center;gap:12px;margin:16px 0">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
+        <span style="font-size:12px;color:rgba(255,255,255,0.2)">或</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
+      </div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:rgba(255,255,255,0.5)">输入房间号加入</div>
+      <input id="codeInput" value="" maxlength="4" style="width:100%;padding:12px;border-radius:10px;font-size:20px;font-weight:700;letter-spacing:4px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;outline:none;text-align:center;text-transform:uppercase" placeholder="房间号">
+      <div style="height:10px"></div>
+      <button onclick="joinRoom()" style="width:100%;padding:14px;border-radius:12px;font-size:16px;font-weight:700;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;border:none;cursor:pointer;transition:all 0.1s">🚪 加入房间</button>
+      <div id="lobbyMsg" style="margin-top:10px;text-align:center;font-size:12px;color:rgba(255,180,100,0.6)"></div>
+    </div>
+  </div>
   <div id="gameUI" style="display:none">
     <div class="status-bar" id="statusBar"></div>
     <div class="btn-row">
       <button class="btn btn-a" id="btnA" onclick="send('assign')" disabled>分配</button>
       <button class="btn btn-l" id="btnL" onclick="send('light')" disabled>亮号</button>
-      <button class="btn btn-p" id="btnP" onclick="ss('上局_第'+(state.round||0)+'局');send('prev')" disabled>上局</button>
-      <button class="btn btn-n" id="btnN" onclick="ss('下局_第'+(state.round||0)+'局');send('next')" disabled>下局</button>
+      <button class="btn btn-p" id="btnP" onclick="send('prev')" disabled>上局</button>
+      <button class="btn btn-n" id="btnN" onclick="send('next')" disabled>下局</button>
     </div>
     <div id="gameArea"></div>
     <div id="galleryBtn" style="text-align:center;margin:6px 0;display:none">
@@ -111,64 +98,74 @@ function showSS(url){document.getElementById('lbImg').src=url;document.getElemen
 <script>
 const COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#a78bfa'];
 const DFLT=['玩家一','玩家二','玩家三','玩家四','玩家五'];
-let ws=null,myIndex=-1,state=null;
-const LS_IDX='taiMaPlayerIdx',LS_NICK='taiMaNick_';
+let ws=null,myIndex=-1,state=null,roomCode=null;
+const LS_NICK='taiMaNick';
+
 function getWsUrl(){const p=window.location;return(p.protocol==='https:'?'wss:':'ws:')+'//'+p.host;}
-function connect(){ws=new WebSocket(getWsUrl());ws.onopen=()=>{};ws.onmessage=e=>handleMsg(JSON.parse(e.data));ws.onclose=()=>{document.getElementById('statusBar').textContent='⚠️ 断开'};}
+
+function connect(){
+  // 恢复昵称
+  const saved=localStorage.getItem(LS_NICK);
+  if(saved)document.getElementById('nickInput').value=saved;
+  ws=new WebSocket(getWsUrl());
+  ws.onopen=()=>{document.getElementById('lobbyMsg').textContent='';};
+  ws.onmessage=e=>handleMsg(JSON.parse(e.data));
+  ws.onclose=()=>{if(document.getElementById('gameUI').style.display!=='none')document.getElementById('statusBar').textContent='⚠️ 连接断开';};
+}
+
 function send(m,ex){if(!ws||ws.readyState!==1)return;ws.send(JSON.stringify(typeof m==='string'?Object.assign({type:m},ex||{}):m));}
+
 function handleMsg(msg){
   switch(msg.type){
-    case 'lobby':renderLobby(msg);break;
-    case 'joined':myIndex=msg.playerIndex;state=msg.state;document.getElementById('lobby').style.display='none';document.getElementById('gameUI').style.display='';renderState();window.scrollTo(0,0);break;
-    case 'state':state=msg.state;if(document.getElementById('gameUI').style.display!=='none')renderState();else renderLobbyFromState();break;
+    case 'joined':
+      myIndex=msg.playerIndex;roomCode=msg.roomCode;state=msg.state;
+      document.getElementById('lobbyUI').style.display='none';
+      document.getElementById('gameUI').style.display='';
+      renderState();window.scrollTo(0,0);
+      break;
+    case 'state':
+      state=msg.state;
+      if(document.getElementById('gameUI').style.display!=='none')renderState();
+      break;
     case 'err':alert(msg.msg);break;
   }
 }
-function renderLobby(msg){
-  const c=MODE[msg.mode||'mode2'].count;const names=msg.ply||DFLT.slice(0,c);const occupied=msg.occupied||{};const lsIdx=localStorage.getItem(LS_IDX);
-  let h='<div class="lobby"><h2>选择模式与身份</h2><select class="mode-sel" id="lobbyMode" onchange="onLobbyModeChange()">';
-  for(const[k,v]of Object.entries(MODE))h+=`<option value="${k}" ${k===(msg.mode||'mode2')?'selected':''}>${v.count}人模式</option>`;
-  h+='</select><div style="height:10px"></div>';
-  for(let i=0;i<c;i++){const tc=COLORS[i%5],taken=!!occupied[i],savedNick=localStorage.getItem(LS_NICK+i)||names[i]||DFLT[i],isMySlot=lsIdx&&parseInt(lsIdx)===i;
-    h+=`<div class="lobby-row" data-idx="${i}" style="${isMySlot?'border-color:#f7971e;':''}"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="lobby-name" style="color:${taken?'rgba(255,255,255,0.3)':tc}">${names[i]}</div><div class="lobby-nick"><input id="lobbyNick${i}" value="${savedNick}" placeholder="输入昵称" maxlength="6" ${taken?'disabled':''} onclick="event.stopPropagation()"></div><div class="lobby-status" style="color:${taken?'rgba(255,255,255,0.3)':'#6bcb77'}">${taken?'已有人':'可选'}</div></div>`;}
-  h+='<button class="lobby-join" id="lobbyBtn" onclick="doJoin()">进入游戏</button><div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.2)">点击玩家行选择身份，再点进入</div></div>';
-  document.getElementById('lobby').innerHTML=h;document.getElementById('lobby').style.display='';
-  document.querySelectorAll('.lobby-row').forEach(r=>{r.addEventListener('click',function(){const idx=parseInt(this.dataset.idx);localStorage.setItem(LS_IDX,idx);document.querySelectorAll('.lobby-row').forEach(x=>x.style.borderColor='rgba(255,255,255,0.08)');this.style.borderColor='#f7971e';});});
+
+function createRoom(){
+  const nick=document.getElementById('nickInput').value.trim()||'玩家';
+  localStorage.setItem(LS_NICK,nick);
+  const mode=document.getElementById('modeSel').value;
+  send('createRoom',{name:nick,mode});
 }
-function renderLobbyFromState(){if(!state)return;renderLobby({occupied:state.occupied||{},mode:state.mode||'mode2',ply:state.ply.map(p=>p.n)});}
-function onLobbyModeChange(){send('modeChange',{mode:document.getElementById('lobbyMode').value});}
-function doJoin(){
-  let idx=localStorage.getItem(LS_IDX);if(idx===null){alert('请先选择一个玩家');return;}idx=parseInt(idx);
-  const c=state?state.ply.length:4;if(idx<0||idx>=c){alert('无效玩家');return;}
-  const nickEl=document.getElementById('lobbyNick'+idx);if(!nickEl){alert('请先选择一个玩家');return;}
-  const nick=nickEl.value.trim()||DFLT[idx];localStorage.setItem(LS_NICK+idx,nick);send('joinPlayer',{playerIndex:idx,name:nick});
+function joinRoom(){
+  const nick=document.getElementById('nickInput').value.trim()||'玩家';
+  localStorage.setItem(LS_NICK,nick);
+  const code=document.getElementById('codeInput').value.trim().toUpperCase();
+  if(!code){document.getElementById('lobbyMsg').textContent='请输入房间号';return;}
+  send('joinRoom',{roomCode:code,name:nick});
 }
+
 function renderState(){
   if(!state)return;const area=document.getElementById('gameArea');
-  const myName=state.ply[myIndex]?.n||DFLT[myIndex]||'';
+  const myName=state.ply[myIndex]?.n||'';
   const inHistory=state.historyPos>=0;
-  document.getElementById('statusBar').innerHTML=`<span class="dot">🟢</span> 你的身份: <strong>${myName}</strong>`;
+  document.getElementById('statusBar').innerHTML=`<span class="dot">🟢</span> ${myName} <span style="color:rgba(255,255,255,0.2);margin:0 6px">|</span> <span style="color:${COLORS[myIndex%5]||'#ffd200'}">房间 ${roomCode}</span>`;
   const lv=state.lightVotes||[];
   const isVoting=!state.lit&&state.done&&lv.length>0&&!inHistory;
-  // 分配：亮号后可用；历史模式禁用
   document.getElementById('btnA').disabled=state.done&&!state.lit||inHistory;
-  // 亮号：需要2人投票；历史模式禁用
   document.getElementById('btnL').disabled=!state.done||state.lit||lv.length>=2||inHistory;
-  // 上局：有历史且不在最旧一条
   document.getElementById('btnP').disabled=state.history.length===0||state.historyPos===0;
-  // 下局：不在历史模式时禁用
   document.getElementById('btnN').disabled=state.historyPos===-1;
   if(isVoting){
     let h='<div style="text-align:center;padding:20px 0">';
     h+=`<div style="font-size:15px;font-weight:600;color:#f093fb;margin-bottom:6px">👆 亮号确认中</div>`;
     h+=`<div style="font-size:13px;color:rgba(255,255,255,0.5)">${lv.length}/2 玩家已确认亮号</div>`;
     h+=`<div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.2)">需要2位不同玩家按「亮号」按钮</div>`;
-    for(let i=0;i<state.ply.length;i++){const tc=COLORS[i%5],voted=lv.includes(i),isMe=myIndex===i;
-      h+=`<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 0;${voted?'opacity:0.5':''}"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><span style="font-size:13px;font-weight:500">${state.ply[i].n}</span><span style="font-size:13px">${voted?'✅ 已确认':(isMe?'👇 等你就绪':'⏳')}</span></div>`;}
+    for(let i=0;i<state.ply.length;i++){const tc=COLORS[i%5],voted=lv.includes(i),im=myIndex===i;
+      h+=`<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 0;${voted?'opacity:0.5':''}"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><span style="font-size:13px;font-weight:500">${state.ply[i].n}</span><span style="font-size:13px">${voted?'✅ 已确认':(im?'👇 等你就绪':'⏳')}</span></div>`;}
     h+='</div>';area.innerHTML=h;return;
   }
   let html='';
-  // 历史模式提示
   if(inHistory)html+=`<div class="hdr"><span class="hdr-tag hist">📜 历史状态 - 第${state.round}局</span></div>`;
   html+='<div class="pb">';
   const rs=calcScores(state.ply,state.pcs);
@@ -190,17 +187,45 @@ function renderState(){
   html+=`<div class="msg ${inHistory?'info':!state.done?'info':'success'}">${msg}</div>`;
   area.innerHTML=html;
 }
+
 function calcScores(ply,pcs){const scores=[];const allGreen=[];
   for(let i=0;i<ply.length;i++){const p=ply[i];const need=pcs[i]||0;let bk=0,rd=0,yl=0,hB=false;
-    for(let si=0;si<need+4;si++){if(si<need){if(p.cs[si]==='bk'){bk++;hB=true;}}else{
-      if(p.cs[si]==='rd'){rd++;}else if(p.cs[si]==='yl'){yl++;}
-    }}allGreen[i]=!hB;scores[i]={bk,rd,yl};}
-  const r=[];
-  for(let i=0;i<ply.length;i++){if(!allGreen[i])r[i]=-scores[i].bk+scores[i].rd-2*scores[i].yl;}
+    for(let si=0;si<need+4;si++){if(si<need){if(p.cs[si]==='bk'){bk++;hB=true;}}else{if(p.cs[si]==='rd'){rd++;}else if(p.cs[si]==='yl'){yl++;}}}
+    allGreen[i]=!hB;scores[i]={bk,rd,yl};}
+  const r=[];for(let i=0;i<ply.length;i++){if(!allGreen[i])r[i]=-scores[i].bk+scores[i].rd-2*scores[i].yl;}
   for(let i=0;i<ply.length;i++){if(allGreen[i]){let o=0;for(let j=0;j<ply.length;j++)if(j!==i)o+=r[j]||0;r[i]=-o;}}
   return r;}
-const MODE={mode1:{count:3,base:[5,5,5]},mode2:{count:4,base:[3,4,4,4]},mode3:{count:5,base:[3,3,3,3,3]}};
+
+// ====== 截图 ======
+let gameSS=[];
+function ss(msg){try{const el=document.getElementById('gameUI');if(!el||!window.html2canvas)return;
+  html2canvas(el,{scale:2,backgroundColor:'#1a1a2e',useCORS:true,allowTaint:true,logging:false}).then(c=>{
+    const url=c.toDataURL('image/png');
+    if(gameSS.length>=2)gameSS.shift();
+    gameSS.push({msg,url,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
+    document.getElementById('ssCount').textContent=gameSS.length;
+    document.getElementById('galleryBtn').style.display='';
+  }).catch(()=>{});}catch(e){}
+}
+function toggleGallery(){const g=document.getElementById('gallery');g.style.display=g.style.display==='none'?'':'none';renderGallery();}
+function renderGallery(){const g=document.getElementById('gallery');if(g.style.display==='none')return;
+  let h='<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:6px">点击截图放大，再点关闭</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">';
+  for(let i=gameSS.length-1;i>=0;i--){const s=gameSS[i];
+    h+=`<div style="cursor:pointer;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)" onclick="showSS('${s.url}')"><img src="${s.url}" style="width:100%;display:block"><div style="font-size:9px;color:rgba(255,255,255,0.3);text-align:center;padding:2px">${s.msg} ${s.time}</div></div>`;}
+  h+='</div>';g.innerHTML=h;}
+function showSS(url){document.getElementById('lbImg').src=url;document.getElementById('lightbox').style.display='flex';}
+
+// ====== 截图添加到上局/下局 ======
+const _origSend=send;
+send=function(m,ex){
+  if(typeof m==='string'&&(m==='prev'||m==='next')){
+    ss((m==='prev'?'上局_第':'下局_第')+(state?.round||0)+'局');
+  }
+  return _origSend(m,ex);
+};
+
 connect();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </body>
 </html>
