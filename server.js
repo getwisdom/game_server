@@ -47,10 +47,18 @@ function broadcast(room,msg){
   clients.forEach((v,ws)=>{if(v.roomCode===room){try{ws.send(msg);}catch(e){}}});
 }
 
-function stateForClient(room){
+function stateForClient(room, forPlayer){
   const s=rooms.get(room);if(!s)return null;
   const r=JSON.parse(JSON.stringify(s));delete r._liveBackup;
   r.lightVotes=s._lightVotes?Object.keys(s._lightVotes).map(Number):[];
+  // 亮号前对其他玩家隐藏数字格颜色
+  if(!s.lit&&forPlayer!==undefined&&forPlayer>=0){
+    for(let i=0;i<r.ply.length;i++){
+      if(i===forPlayer)continue;
+      const need=r.pcs[i]||0;
+      for(let si=0;si<need;si++)r.ply[i].cs[si]='bk';
+    }
+  }
   return r;
 }
 
@@ -147,7 +155,11 @@ function handleMessage(client, msg) {
     case 'toggleCell':
       if(!rc)return;if(msg.playerIndex!==client.playerIndex)return;
       toggleCell(rooms.get(rc),msg.playerIndex,msg.cellIndex);
-      broadcast(rc,{type:'state',state:stateForClient(rc)});break;
+      // 自己对调者发送真实状态，其他玩家隐藏数字格颜色
+      clients.forEach((v,ws)=>{if(v.roomCode===rc){
+        const isSelf=ws===client.ws;
+        try{ws.send(JSON.stringify({type:'state',state:stateForClient(rc,isSelf?v.playerIndex:-1)}));}catch(e){}
+      }});break;
     case 'assign':
       if(!rc)return;doAssign(rooms.get(rc));
       broadcast(rc,{type:'state',state:stateForClient(rc)});break;
