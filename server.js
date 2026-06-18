@@ -31,11 +31,7 @@ function calcScores(ply,pcs){
 const rooms = new Map(); // roomCode -> state
 const clients = new Map(); // ws -> {roomCode, playerIndex}
 
-function genCode(){
-  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let c; do{c='';for(let i=0;i<4;i++)c+=chars[rd(0,chars.length-1)];}while(rooms.has(c));
-  return c;
-}
+function genCode(){let c;do{c=String(rd(1000,9999));}while(rooms.has(c));return c;}
 
 function newRoom(mode){
   const c=MODE[mode];

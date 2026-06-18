@@ -72,7 +72,7 @@
         <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
       </div>
       <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:rgba(255,255,255,0.5)">输入房间号加入</div>
-      <input id="codeInput" value="" maxlength="4" style="width:100%;padding:12px;border-radius:10px;font-size:20px;font-weight:700;letter-spacing:4px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;outline:none;text-align:center;text-transform:uppercase" placeholder="房间号">
+      <input id="codeInput" value="" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="width:100%;padding:12px;border-radius:10px;font-size:20px;font-weight:700;letter-spacing:4px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;outline:none;text-align:center" placeholder="房间号">
       <div style="height:10px"></div>
       <button onclick="joinRoom()" style="width:100%;padding:14px;border-radius:12px;font-size:16px;font-weight:700;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;border:none;cursor:pointer;transition:all 0.1s">🚪 加入房间</button>
       <div id="lobbyMsg" style="margin-top:10px;text-align:center;font-size:12px;color:rgba(255,180,100,0.6)"></div>
