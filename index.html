@@ -207,7 +207,7 @@ function renderState(){
     const cum=(state.cum[i]||0)+rs[i];
     const showST=state.lit&&state.multi;
     const stVal=showST?Math.round(cum*state.multi*100)/100:null;
-    html+=`<div class="pblock${isMe?' me':''}"><div class="pheader"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="pname" style="color:${tc}">${p.n}</div>${isMe?'<span class="tag-me">👈 你</span>':''}<div class="pscore">当局: <span class="n">${rs[i]>=0?'+'+rs[i]:rs[i]}</span></div><div class="pscore">累计: <span class="n2">${cum}</span>${stVal!==null?` <span class="st">小计:${stVal}</span>`:''}</div></div><div class="grid">`;
+    html+=`<div class="pblock${isMe?' me':''}"><div class="pheader"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="pname" style="color:${tc}">${p.n}</div>${isMe?'<span class="tag-me">👈 你</span>':''}<div class="pscore">${state.lit?`当局: <span class="n">${rs[i]>=0?'+'+rs[i]:rs[i]}</span>`:''}</div><div class="pscore">累计: <span class="n2">${cum}</span>${stVal!==null?` <span class="st">小计:${stVal}</span>`:''}</div></div><div class="grid">`;
     for(let si=0;si<need+4;si++){
       const val=p.s[si],cl=p.cs[si]||'em';let d='·';
       if(val!==undefined&&val!==null){if(si<need)d=(state.lit||isMe)?val:'?';else d=val;}
