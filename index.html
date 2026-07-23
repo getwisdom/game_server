@@ -203,10 +203,11 @@ function renderState(){
   if(!state)return;const area=document.getElementById('gameArea');
   const myName=state.ply[myIndex]?.n||'';
   const inHistory=state.historyPos>=0;
+  const ag=isAllGreen(state,myIndex);
   document.getElementById('statusBar').innerHTML=`<span class="dot">🟢</span> ${myName} <span style="color:rgba(255,255,255,0.2);margin:0 6px">|</span> <span style="color:${COLORS[myIndex%5]||'#ffd200'}">房间 ${roomCode}</span> ${state.multi&&state.multi!==1?`<span style="color:rgba(255,255,255,0.15)">倍率${state.multi}</span>`:''}`;
   const lv=state.lightVotes||[];
   const isVoting=!state.lit&&state.done&&lv.length>0&&!inHistory;
-  document.getElementById('btnA').disabled=state.done&&!state.lit||inHistory;
+  document.getElementById('btnA').disabled=state.done&&!state.lit||inHistory||(state.lit&&!ag);
   document.getElementById('btnL').disabled=!state.done||state.lit||lv.length>=2||inHistory;
   document.getElementById('btnP').disabled=state.history.length===0||state.historyPos===0;
   document.getElementById('btnN').disabled=state.historyPos===-1;
@@ -229,7 +230,7 @@ function renderState(){
     const cum=(state.cum[i]||0)+rs[i];
     const showST=state.lit&&state.multi;
     const stVal=showST?Math.round(cum*state.multi*100)/100:null;
-    html+=`<div class="pblock${isMe?' me':''}"><div class="pheader"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="pname" style="color:${tc}">${p.n}</div>${isMe?'<span class="tag-me">👈 你</span>':''}<div class="pscore">${state.lit?`当局: <span class="n">${rs[i]>=0?'+'+rs[i]:rs[i]}</span>`:''}</div><div class="pscore">累计: <span class="n2">${cum}</span>${stVal!==null?` <span class="st">小计:${stVal}</span>`:''}</div></div><div class="grid">`;
+    html+=`<div class="pblock${isMe?' me':''}"><div class="pheader"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="pname" style="color:${tc}">${p.n}</div>${isMe?'<span class="tag-me">👈 你</span>':''}<div class="pscore">${(state.lit||isMe)?`当局: <span class="n">${rs[i]>=0?'+'+rs[i]:rs[i]}</span>`:''}</div><div class="pscore">累计: <span class="n2">${cum}</span>${stVal!==null?` <span class="st">小计:${stVal}</span>`:''}</div></div><div class="grid">`;
     for(let si=0;si<need+4;si++){
       const val=p.s[si],cl=p.cs[si]||'em';let d='·';
       if(val!==undefined&&val!==null){if(si<need)d=(state.lit||isMe)?val:'?';else d=val;}
@@ -240,7 +241,7 @@ function renderState(){
   }
   html+='</div>';
   html+=`<div style="text-align:center;padding:4px 0;font-size:11px;color:rgba(255,255,255,0.3)">🎲 已分配 ${state.assignCount} 次</div>`;
-  let msg=inHistory?'⬆️ 点「上局」「下局」浏览历史':!state.done?'点击「分配」发牌':!state.lit?'需2位玩家按「亮号」':'点「分配」下一轮';
+  let msg=inHistory?'⬆️ 点「上局」「下局」浏览历史':!state.done?'点击「分配」发牌':!state.lit?'需2位玩家按「亮号」':ag?'点「分配」下一轮':'需要全绿玩家点「分配」下一轮';
   html+=`<div class="msg ${inHistory?'info':!state.done?'info':'success'}">${msg}</div>`;
   area.innerHTML=html;
 }
@@ -252,6 +253,8 @@ function calcScores(ply,pcs){const scores=[];const allGreen=[];
   const r=[];for(let i=0;i<ply.length;i++){if(!allGreen[i])r[i]=-scores[i].bk+scores[i].rd-2*scores[i].yl;}
   for(let i=0;i<ply.length;i++){if(allGreen[i]){let o=0;for(let j=0;j<ply.length;j++)if(j!==i)o+=r[j]||0;r[i]=-o;}}
   return r;}
+
+function isAllGreen(st,pi){const p=st.ply[pi];const need=st.pcs[pi]||0;for(let si=0;si<need;si++){if(p.cs[si]==='bk')return false;}return true;}
 
 // ====== 截图 ======
 let gameSS=[],_ssRound=null;

@@ -129,6 +129,7 @@ function toggleCell(st,pi,si){
   const val=p.s[si];const cur=p.cs[si];
   if(val>0)p.cs[si]=cur==='bk'?'gr':'bk';else p.cs[si]=cur==='gy'?'rd':cur==='rd'?'yl':'gy';
 }
+function isAllGreen(st,pi){const p=st.ply[pi];const need=st.pcs[pi]||0;for(let si=0;si<need;si++){if(p.cs[si]==='bk')return false;}return true;}
 function handleLightRoom(st,client){
   if(!st.done||st.lit||st.historyPos>=0)return;
   if(client.playerIndex<0)return;
@@ -179,7 +180,13 @@ function handleMessage(client, msg) {
         broadcast(rc,{type:'state',state:stateForClient(rc)});
       }break;
     case 'assign':
-      if(!rc)return;doAssign(rooms.get(rc));
+      if(!rc)return;
+      const ast=rooms.get(rc);
+      if(ast.lit&&!isAllGreen(ast,client.playerIndex)){
+        client.ws.send(JSON.stringify({type:'err',msg:'只有全绿玩家才能分配下一局'}));
+        return;
+      }
+      doAssign(ast);
       broadcast(rc,{type:'state',state:stateForClient(rc)});break;
     case 'light':
       if(!rc)return;handleLightRoom(rooms.get(rc),client);break;
