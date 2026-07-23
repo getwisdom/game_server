@@ -51,7 +51,7 @@
   .hdr-tag.rc{background:rgba(100,180,255,0.15);color:#64b4ff;}
   #lightbox{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;cursor:pointer;}
   #lightbox img{max-width:95vw;max-height:95vh;border-radius:8px;}
-  .pheader .pscore .st{color:#f7971e;font-weight:700;font-size:13px;}
+  .pheader .pscore .st{color:#f7971e;font-weight:700;font-size:13px;float:right;}
   @keyframes fbGlow{0%{box-shadow:0 0 0 0 rgba(255,255,255,0.3)}100%{box-shadow:0 0 8px 4px rgba(255,255,255,0)}}
   .fb-glow{animation:fbGlow 0.25s ease-out;}
 </style>
@@ -59,7 +59,7 @@
 <body>
 <div class="gc" id="app">
   <h1>🎮 台麻游戏</h1>
-  <p class="sub">当局 -5+绿数+红数-2×黄数 | 全绿时他人分=|全绿分|</p>
+  <p class="sub">当局 -5+绿数+红数-2×黄数 | 全绿分=|他人分和|</p>
   <div id="lobbyUI">
     <div style="padding:20px 0">
       <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:rgba(255,255,255,0.5)">你的昵称</div>
@@ -230,7 +230,7 @@ function renderState(){
     const cum=(state.cum[i]||0)+rs[i];
     const showST=state.lit&&state.multi;
     const stVal=showST?Math.round(cum*state.multi*100)/100:null;
-    html+=`<div class="pblock${isMe?' me':''}"><div class="pheader"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="pname" style="color:${tc}">${p.n}</div>${isMe?'<span class="tag-me">👈 你</span>':''}<div class="pscore">${(state.lit||isMe)?`当局: <span class="n">${rs[i]>=0?'+'+rs[i]:rs[i]}</span>`:''}</div><div class="pscore">累计: <span class="n2">${cum}</span>${stVal!==null?` <span class="st">¥${stVal}</span>`:''}</div></div><div class="grid">`;
+    html+=`<div class="pblock${isMe?' me':''}"><div class="pheader"><div class="ptag" style="background:${tc}30;color:${tc}">${i+1}</div><div class="pname" style="color:${tc}">${p.n}</div>${isMe?'<span class="tag-me">👈 你</span>':''}<div class="pscore">当局: <span class="n">${state.lit?(rs[i]>=0?'+'+rs[i]:rs[i]):'0'}</span></div><div class="pscore">累计: <span class="n2">${cum}</span>${stVal!==null?` <span class="st">¥${stVal}</span>`:''}</div></div><div class="grid">`;
     for(let si=0;si<need+4;si++){
       const val=p.s[si],cl=p.cs[si]||'em';let d='·';
       if(val!==undefined&&val!==null){if(si<need)d=(state.lit||isMe)?val:'?';else d=val;}
@@ -248,7 +248,7 @@ function renderState(){
 
 function calcScores(ply,pcs){
   // 新规则：每玩家得分 = -5 + 绿数字数 + 红0数 - 2×黄0数
-  // 当某个玩家全绿时，其他玩家的分数 = |该全绿玩家的分数|
+  // 当某个玩家全绿时，全绿玩家分数 = |其他玩家分数之和|
   const allGreen=[],st=[];
   for(let i=0;i<ply.length;i++){const p=ply[i];const need=pcs[i]||0;let gr=0,rd=0,yl=0,hB=false;
     for(let si=0;si<need+4;si++){if(si<need){if(p.cs[si]==='bk'){hB=true;}else if(p.cs[si]==='gr'){gr++;}}else{if(p.cs[si]==='rd'){rd++;}else if(p.cs[si]==='yl'){yl++;}}}
@@ -256,7 +256,7 @@ function calcScores(ply,pcs){
   const r=[];
   for(let i=0;i<ply.length;i++){r[i]=-5+st[i].gr+st[i].rd-2*st[i].yl;}
   for(let i=0;i<ply.length;i++){
-    if(allGreen[i]){const ag=r[i];for(let j=0;j<ply.length;j++){if(j!==i)r[j]=Math.abs(ag);}break;}
+    if(allGreen[i]){let sum=0;for(let j=0;j<ply.length;j++){if(j!==i)sum+=r[j];}r[i]=Math.abs(sum);break;}
   }
   return r;}
 

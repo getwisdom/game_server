@@ -27,7 +27,7 @@ function calcScores(ply,pcs){
   const r=[];
   for(let i=0;i<ply.length;i++){r[i]=-5+st[i].gr+st[i].rd-2*st[i].yl;}
   for(let i=0;i<ply.length;i++){
-    if(allGreen[i]){const ag=r[i];for(let j=0;j<ply.length;j++){if(j!==i)r[j]=Math.abs(ag);}break;}
+    if(allGreen[i]){let sum=0;for(let j=0;j<ply.length;j++){if(j!==i)sum+=r[j];}r[i]=Math.abs(sum);break;}
   }
   return r;
 }
