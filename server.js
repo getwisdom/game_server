@@ -18,12 +18,17 @@ function rd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function shf(a){for(let i=a.length-1;i>0;i--){let j=rd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 function calcScores(ply,pcs){
-  const scores=[];const allGreen=[];
-  for(let i=0;i<ply.length;i++){const p=ply[i];const need=pcs[i]||0;let bk=0,rd=0,yl=0,hB=false;
-    for(let si=0;si<need+4;si++){if(si<need){if(p.cs[si]==='bk'){bk++;hB=true;}}else{if(p.cs[si]==='rd'){rd++;}else if(p.cs[si]==='yl'){yl++;}}}
-    allGreen[i]=!hB;scores[i]={bk,rd,yl};}
-  const r=[];for(let i=0;i<ply.length;i++){if(!allGreen[i])r[i]=scores[i].rd-2*scores[i].yl;}
-  for(let i=0;i<ply.length;i++){if(allGreen[i]){let o=0;for(let j=0;j<ply.length;j++)if(j!==i)o+=r[j]||0;r[i]=-o;}}
+  // 新规则：每玩家得分 = -5 + 绿数字数 + 红0数 - 2×黄0数
+  // 当某个玩家全绿时，其他玩家的分数 = |该全绿玩家的分数|
+  const allGreen=[],st=[];
+  for(let i=0;i<ply.length;i++){const p=ply[i];const need=pcs[i]||0;let gr=0,rd=0,yl=0,hB=false;
+    for(let si=0;si<need+4;si++){if(si<need){if(p.cs[si]==='bk'){hB=true;}else if(p.cs[si]==='gr'){gr++;}}else{if(p.cs[si]==='rd'){rd++;}else if(p.cs[si]==='yl'){yl++;}}}
+    allGreen[i]=!hB;st[i]={gr,rd,yl};}
+  const r=[];
+  for(let i=0;i<ply.length;i++){r[i]=-5+st[i].gr+st[i].rd-2*st[i].yl;}
+  for(let i=0;i<ply.length;i++){
+    if(allGreen[i]){const ag=r[i];for(let j=0;j<ply.length;j++){if(j!==i)r[j]=Math.abs(ag);}break;}
+  }
   return r;
 }
 
