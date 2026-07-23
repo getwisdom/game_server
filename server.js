@@ -38,7 +38,7 @@ function newRoom(mode){
   return {
     mode,ply:[],pcs:[],round:0,assignCount:0,cum:[],multi:1,
     done:false,lit:false,ended:false,history:[],historyPos:-1,
-    _liveBackup:null,
+    _liveBackup:null,_seats:{},
   };
 }
 
@@ -84,7 +84,7 @@ function initPlayers(st){
   st.ply=[];for(let i=0;i<c.count;i++)st.ply.push({n:DFLT[i],s:[],cs:[]});
   st.pcs=pp(st.mode,0);st.round=0;st.assignCount=0;st.cum=[];
   st.done=false;st.lit=false;st.ended=false;st.history=[];st.historyPos=-1;
-  st._lightVotes={};if(st._lt){clearTimeout(st._lt);st._lt=null;}
+  st._lightVotes={};st._seats={};if(st._lt){clearTimeout(st._lt);st._lt=null;}
 }
 
 function doAssign(st){
@@ -150,6 +150,7 @@ function handleMessage(client, msg) {
       const mode=msg.mode||'mode2';const code=genCode();
       const st=newRoom(mode);initPlayers(st);
       st.ply[0].n=msg.name||DFLT[0];st.multi=parseFloat(msg.multi)||1;
+      st._seats={};st._seats[msg.name||DFLT[0]]=0;
       rooms.set(code,st);
       client.roomCode=code;client.playerIndex=0;
       client.ws.send(JSON.stringify({type:'joined',roomCode:code,playerIndex:0,state:stateForClient(code)}));
@@ -159,12 +160,21 @@ function handleMessage(client, msg) {
     case 'joinRoom': {
       const code=msg.roomCode;if(!code||!rooms.has(code)){client.ws.send(JSON.stringify({type:'err',msg:'房间不存在'}));return;}
       const st=rooms.get(code);const c=MODE[st.mode].count;
-      // 找空位
+      // 优先回原位，否则找空位
       let pi=-1;
-      for(let i=0;i<c;i++){const taken=Array.from(clients.values()).some(v=>v.roomCode===code&&v.playerIndex===i);if(!taken){pi=i;break;}}
+      const name=msg.name||'';
+      if(name&&st._seats&&st._seats[name]!==undefined){
+        const reserved=st._seats[name];
+        const taken=Array.from(clients.values()).some(v=>v.roomCode===code&&v.playerIndex===reserved);
+        if(!taken)pi=reserved;
+      }
+      if(pi===-1){
+        for(let i=0;i<c;i++){const taken=Array.from(clients.values()).some(v=>v.roomCode===code&&v.playerIndex===i);if(!taken){pi=i;break;}}
+      }
       if(pi===-1){client.ws.send(JSON.stringify({type:'err',msg:'房间已满'}));return;}
       client.roomCode=code;client.playerIndex=pi;
-      st.ply[pi].n=msg.name||DFLT[pi];
+      st.ply[pi].n=name||DFLT[pi];
+      if(!st._seats)st._seats={};st._seats[name]=pi;
       // 有人回来了，取消空房清理定时器
       if(st._emptyTimer){clearTimeout(st._emptyTimer);st._emptyTimer=null;}
       client.ws.send(JSON.stringify({type:'joined',roomCode:code,playerIndex:pi,state:stateForClient(code)}));
