@@ -210,9 +210,9 @@ wss.on('connection',(ws)=>{
       // 检查房间是否还有人
       const hasPlayer=Array.from(clients.values()).some(v=>v.roomCode===rc);
       if(!hasPlayer){
-        // 没人了，但保留房间，30分钟后清理
+        // 没人了，但保留房间，5小时后清理
         if(!rooms.get(rc)._emptyTimer)
-          rooms.get(rc)._emptyTimer=setTimeout(()=>{rooms.delete(rc);},30*60*1000);
+          rooms.get(rc)._emptyTimer=setTimeout(()=>{rooms.delete(rc);},5*60*60*1000);
       }else{
         broadcast(rc,{type:'state',state:stateForClient(rc)});
       }

@@ -6,7 +6,7 @@
 <title>台麻游戏</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(160deg,#0f0c29,#302b63,#24243e);min-height:100vh;min-height:100dvh;display:flex;justify-content:center;color:#fff;padding:8px 0 20px 0;touch-action:manipulation;}
+  body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(160deg,#0f0c29,#302b63,#24243e);min-height:100vh;min-height:100dvh;display:flex;justify-content:center;color:#fff;padding:8px 0 20px 0;touch-action:manipulation;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;}
   .gc{width:100%;max-width:420px;padding:10px 12px;}
   h1{text-align:center;font-size:18px;font-weight:700;background:linear-gradient(90deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:2px;}
   .sub{text-align:center;color:rgba(255,255,255,0.18);font-size:9px;margin-bottom:8px;}
@@ -107,8 +107,9 @@
 <script>
 const COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#a78bfa'];
 const DFLT=['玩家一','玩家二','玩家三','玩家四','玩家五'];
-let ws=null,myIndex=-1,state=null,roomCode=null,myMulti=1;
+let ws=null,myIndex=-1,state=null,roomCode=null,myMulti=1,myName='';
 const LS_NICK='taiMaNick',LS_MULTI='taiMaMulti';
+let reconnectAttempts=0,reconnectTimer=null,manualClose=false;
 
 function getWsUrl(){const p=window.location;return(p.protocol==='https:'?'wss:':'ws:')+'//'+p.host;}
 
@@ -135,9 +136,31 @@ function connect(){
   if(saved)document.getElementById('nickInput').value=saved;
 
   ws=new WebSocket(getWsUrl());
-  ws.onopen=()=>{document.getElementById('lobbyMsg').textContent='';};
+  ws.onopen=()=>{
+    reconnectAttempts=0;
+    document.getElementById('lobbyMsg').textContent='';
+    // 重连成功，尝试重新加入之前的房间
+    if(roomCode&&myName){
+      send('joinRoom',{roomCode,name:myName});
+    }
+  };
   ws.onmessage=e=>handleMsg(JSON.parse(e.data));
-  ws.onclose=()=>{if(document.getElementById('gameUI').style.display!=='none')document.getElementById('statusBar').textContent='⚠️ 连接断开';};
+  ws.onclose=()=>{
+    if(manualClose)return;
+    if(document.getElementById('gameUI').style.display!=='none'){
+      document.getElementById('statusBar').textContent='⚠️ 连接断开，正在重连...';
+    }
+    scheduleReconnect();
+  };
+}
+
+function scheduleReconnect(){
+  if(reconnectTimer)return;
+  reconnectAttempts++;
+  reconnectTimer=setTimeout(()=>{
+    reconnectTimer=null;
+    connect();
+  },2000);
 }
 
 function send(m,ex){if(!ws||ws.readyState!==1)return;ws.send(JSON.stringify(typeof m==='string'?Object.assign({type:m},ex||{}):m));}
@@ -161,19 +184,19 @@ function handleMsg(msg){
 }
 
 function createRoom(){
-  const nick=document.getElementById('nickInput').value.trim()||'玩家';
-  localStorage.setItem(LS_NICK,nick);
+  myName=document.getElementById('nickInput').value.trim()||'玩家';
+  localStorage.setItem(LS_NICK,myName);
   const mode=document.getElementById('modeSel').value;
   const m=parseFloat(document.getElementById('multiInput').value)||1;
   localStorage.setItem(LS_MULTI,String(m));
-  send('createRoom',{name:nick,mode,multi:m});
+  send('createRoom',{name:myName,mode,multi:m});
 }
 function joinRoom(){
-  const nick=document.getElementById('nickInput').value.trim()||'玩家';
-  localStorage.setItem(LS_NICK,nick);
+  myName=document.getElementById('nickInput').value.trim()||'玩家';
+  localStorage.setItem(LS_NICK,myName);
   const code=document.getElementById('codeInput').value.trim();
   if(!code){document.getElementById('lobbyMsg').textContent='请输入房间号';return;}
-  send('joinRoom',{roomCode:code,name:nick});
+  send('joinRoom',{roomCode:code,name:myName});
 }
 
 function renderState(){
