@@ -233,7 +233,7 @@ function renderState(){
     for(let si=0;si<need+4;si++){
       const val=p.s[si],cl=p.cs[si]||'em';let d='·';
       if(val!==undefined&&val!==null){if(si<need)d=(state.lit||isMe)?val:'?';else d=val;}
-      const canClick=state.done&&isMe&&!inHistory;
+      const canClick=state.done&&!inHistory&&(isMe||(state.lit&&ag));
       html+=`<div class="cell ${cl}${canClick?'':' locked'}" onclick="${canClick?'fbCell(this);send(\'toggleCell\',{playerIndex:'+i+',cellIndex:'+si+'})':''}">${d}</div>`;
     }
     html+='</div></div>';

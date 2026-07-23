@@ -187,8 +187,13 @@ function handleMessage(client, msg) {
       break;
     }
     case 'toggleCell':
-      if(!rc)return;if(msg.playerIndex!==client.playerIndex)return;
-      toggleCell(rooms.get(rc),msg.playerIndex,msg.cellIndex);
+      if(!rc)return;
+      const tst=rooms.get(rc);
+      // 亮号后全绿玩家可以更改其他所有玩家的数字颜色
+      if(msg.playerIndex!==client.playerIndex){
+        if(!tst.lit||!tst.done||!isAllGreen(tst,client.playerIndex))return;
+      }
+      toggleCell(tst,msg.playerIndex,msg.cellIndex);
       // 自己发完整状态，其他玩家通过broadcast自动隐藏
       {const st=rooms.get(rc);
         try{client.ws.send(JSON.stringify({type:'state',state:stateForClient(rc,client.playerIndex)}));}catch(e){}
