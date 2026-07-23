@@ -250,7 +250,7 @@ function calcScores(ply,pcs){const scores=[];const allGreen=[];
   for(let i=0;i<ply.length;i++){const p=ply[i];const need=pcs[i]||0;let bk=0,rd=0,yl=0,hB=false;
     for(let si=0;si<need+4;si++){if(si<need){if(p.cs[si]==='bk'){bk++;hB=true;}}else{if(p.cs[si]==='rd'){rd++;}else if(p.cs[si]==='yl'){yl++;}}}
     allGreen[i]=!hB;scores[i]={bk,rd,yl};}
-  const r=[];for(let i=0;i<ply.length;i++){if(!allGreen[i])r[i]=-scores[i].bk+scores[i].rd-2*scores[i].yl;}
+  const r=[];for(let i=0;i<ply.length;i++){if(!allGreen[i])r[i]=scores[i].rd-2*scores[i].yl;}
   for(let i=0;i<ply.length;i++){if(allGreen[i]){let o=0;for(let j=0;j<ply.length;j++)if(j!==i)o+=r[j]||0;r[i]=-o;}}
   return r;}
 
