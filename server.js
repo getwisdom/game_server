@@ -10,12 +10,10 @@ function saveRooms() {
   try {
     const data = {};
     rooms.forEach((st, code) => {
-      // 只保存有活跃玩家的房间
-      const hasPlayer = Array.from(clients.values()).some(v => v.roomCode === code);
-      if (hasPlayer) {
-        const { _liveBackup, _seats, _lightVotes, _lt, _emptyTimer, ...rest } = st;
-        data[code] = rest;
-      }
+      // 保存所有房间（含空房间），防止进程重启丢失
+      const { _liveBackup, _seats, _lightVotes, _lt, _emptyTimer, ...rest } = st;
+      data[code] = rest;
+      data[code]._savedAt = Date.now();
     });
     if (Object.keys(data).length > 0) {
       fs.writeFileSync(ROOMS_FILE, JSON.stringify(data), 'utf8');
@@ -27,7 +25,11 @@ function loadRooms() {
   try {
     if (fs.existsSync(ROOMS_FILE)) {
       const data = JSON.parse(fs.readFileSync(ROOMS_FILE, 'utf8'));
+      const stale = Date.now() - 24 * 60 * 60 * 1000; // 超过24小时视为过期
+      let restored = 0;
       for (const [code, st] of Object.entries(data)) {
+        if (st._savedAt && st._savedAt < stale) continue;
+        delete st._savedAt;
         st._seats = st._seats || {};
         st._lightVotes = {};
         st._lt = null;
@@ -35,8 +37,9 @@ function loadRooms() {
         st._liveBackup = null;
         st.lit = true; // 恢复后标记已亮号，方便继续游戏
         rooms.set(code, st);
+        restored++;
       }
-      console.log(`📦 已恢复 ${rooms.size} 个房间`);
+      console.log(`📦 已恢复 ${restored} 个房间`);
       fs.unlinkSync(ROOMS_FILE);
     }
   } catch (e) { console.log('恢复房间数据失败:', e.message); }
