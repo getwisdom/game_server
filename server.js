@@ -277,11 +277,10 @@ const server=http.createServer((req,res)=>{
 const wss=new WebSocketServer({server});
 
 // ====== WebSocket 心跳 ======
-const HEARTBEAT_INTERVAL = 45000; // 每45秒 ping 一次
+const HEARTBEAT_INTERVAL = 60000; // 每60秒 ping 一次，仅保活
 wss.on('connection',(ws)=>{
   ws.isAlive = true;
-  ws._missedPongs = 0; // 连续未响应计数
-  ws.on('pong', () => { ws.isAlive = true; ws._missedPongs = 0; });
+  ws.on('pong', () => { ws.isAlive = true; });
 
   const client={ws,roomCode:null,playerIndex:-1};clients.set(ws,client);
   ws.on('message',raw=>{try{
@@ -306,16 +305,9 @@ wss.on('connection',(ws)=>{
   });
 });
 
-// 定时检测死连接并发送心跳（连续3次无响应才断开，容忍手机息屏）
+// 定时保活 ping（不主动断连，TCP 层自然检测死连接）
 const heartbeatTimer = setInterval(() => {
   wss.clients.forEach(ws => {
-    if (ws.isAlive === false) {
-      ws._missedPongs = (ws._missedPongs || 0) + 1;
-      if (ws._missedPongs >= 3) return ws.terminate(); // 连续3次≈135s无响应
-      // 还没到上限，再 ping 一次
-      ws.ping();
-      return;
-    }
     ws.isAlive = false;
     ws.ping();
   });
