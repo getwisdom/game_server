@@ -299,15 +299,23 @@ function saveImageToDevice(canvas, label, silent) {
     return;
   }
 
-  // 普通浏览器：通过 <a download> 直接下载到手机（toDataURL 同步，不丢用户手势）
+  // 普通浏览器：iframe + octet-stream 触发静默下载（无需用户手势）
   const dataUrl = canvas.toDataURL('image/png');
+  const base64 = dataUrl.split(',')[1];
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  const blob = new Blob([arr], { type: 'application/octet-stream' });
+  const blobUrl = URL.createObjectURL(blob);
+
+  // 同时用 <a download> 设置文件名
   const a = document.createElement('a');
-  a.href = dataUrl;
+  a.href = blobUrl;
   a.download = filename;
   a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
-  setTimeout(() => document.body.removeChild(a), 1000);
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 2000);
   if (!silent) showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
 }
 
