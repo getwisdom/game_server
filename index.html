@@ -110,7 +110,7 @@ const COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#a78bfa'];
 const DFLT=['玩家一','玩家二','玩家三','玩家四','玩家五'];
 let ws=null,myIndex=-1,state=null,roomCode=null,myMulti=1,myName='';
 const LS_NICK='taiMaNick',LS_MULTI='taiMaMulti';
-let reconnectAttempts=0,reconnectTimer=null,manualClose=false;
+let reconnectAttempts=0,reconnectTimer=null,manualClose=false,hbTimer=null;
 
 function getWsUrl(){const p=window.location;return(p.protocol==='https:'?'wss:':'ws:')+'//'+p.host;}
 
@@ -144,10 +144,14 @@ function connect(){
     if(roomCode&&myName){
       send('joinRoom',{roomCode,name:myName});
     }
+    // 客户端心跳：每25秒发一次 ping 保持连接
+    if(hbTimer)clearInterval(hbTimer);
+    hbTimer=setInterval(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'ping'}));},25000);
   };
   ws.onmessage=e=>handleMsg(JSON.parse(e.data));
   ws.onclose=()=>{
     if(manualClose)return;
+    if(hbTimer){clearInterval(hbTimer);hbTimer=null;}
     if(document.getElementById('gameUI').style.display!=='none'){
       document.getElementById('statusBar').textContent='⚠️ 连接断开，正在重连...';
     }
