@@ -3,6 +3,45 @@ const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
 
+// ====== 房间持久化 ======
+const ROOMS_FILE = path.join(__dirname, 'rooms_backup.json');
+
+function saveRooms() {
+  try {
+    const data = {};
+    rooms.forEach((st, code) => {
+      // 只保存有活跃玩家的房间
+      const hasPlayer = Array.from(clients.values()).some(v => v.roomCode === code);
+      if (hasPlayer) {
+        const { _liveBackup, _seats, _lightVotes, _lt, _emptyTimer, ...rest } = st;
+        data[code] = rest;
+      }
+    });
+    if (Object.keys(data).length > 0) {
+      fs.writeFileSync(ROOMS_FILE, JSON.stringify(data), 'utf8');
+    }
+  } catch (e) { /* 静默失败 */ }
+}
+
+function loadRooms() {
+  try {
+    if (fs.existsSync(ROOMS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(ROOMS_FILE, 'utf8'));
+      for (const [code, st] of Object.entries(data)) {
+        st._seats = st._seats || {};
+        st._lightVotes = {};
+        st._lt = null;
+        st._emptyTimer = null;
+        st._liveBackup = null;
+        st.lit = true; // 恢复后标记已亮号，方便继续游戏
+        rooms.set(code, st);
+      }
+      console.log(`📦 已恢复 ${rooms.size} 个房间`);
+      fs.unlinkSync(ROOMS_FILE);
+    }
+  } catch (e) { console.log('恢复房间数据失败:', e.message); }
+}
+
 const DFLT = ['玩家一','玩家二','玩家三','玩家四','玩家五'];
 const MODE = {
   mode1:{count:3, base:[5,5,5]},
@@ -223,12 +262,21 @@ function handleMessage(client, msg) {
 const PORT=process.env.PORT||8899;
 const server=http.createServer((req,res)=>{
   let url=req.url.split('?')[0];if(url==='/')url='/index.html';
+  // 健康检查 — 也用于防止 Zeabur scale-to-zero
+  if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,rooms:rooms.size,clients:clients.size}));return;}
   const fp=path.join(__dirname,url);
   const mime={'.html':'text/html;charset=utf-8','.js':'application/javascript;charset=utf-8','.css':'text/css;charset=utf-8'};
   fs.readFile(fp,(err,data)=>{if(err){res.writeHead(404);res.end('Not Found');return;}res.writeHead(200,{'Content-Type':mime[path.extname(fp)]||'application/octet-stream'});res.end(data);});
 });
+
 const wss=new WebSocketServer({server});
+
+// ====== WebSocket 心跳 ======
+const HEARTBEAT_INTERVAL = 30000; // 每30秒 ping 一次
 wss.on('connection',(ws)=>{
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
+
   const client={ws,roomCode:null,playerIndex:-1};clients.set(ws,client);
   ws.on('message',raw=>{try{handleMessage(client,JSON.parse(raw));}catch(e){}});
   ws.on('close',()=>{
@@ -237,7 +285,8 @@ wss.on('connection',(ws)=>{
       // 检查房间是否还有人
       const hasPlayer=Array.from(clients.values()).some(v=>v.roomCode===rc);
       if(!hasPlayer){
-        // 没人了，但保留房间，5小时后清理
+        // 没人了 — 先持久化，再设置5小时清理
+        saveRooms();
         if(!rooms.get(rc)._emptyTimer)
           rooms.get(rc)._emptyTimer=setTimeout(()=>{rooms.delete(rc);},5*60*60*1000);
       }else{
@@ -246,4 +295,35 @@ wss.on('connection',(ws)=>{
     }
   });
 });
+
+// 定时检测死连接并发送心跳
+const heartbeatTimer = setInterval(() => {
+  wss.clients.forEach(ws => {
+    if (ws.isAlive === false) return ws.terminate();
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, HEARTBEAT_INTERVAL);
+
+wss.on('close', () => clearInterval(heartbeatTimer));
+
+// 定时持久化活跃房间（每30秒备份一次）
+const persistTimer = setInterval(saveRooms, 30000);
+
+// 自保活：每5分钟自检一次，防止 Zeabur 缩容到零
+const SELF_PING_INTERVAL = 5 * 60 * 1000;
+const selfPingTimer = setInterval(() => {
+  try {
+    const req = http.request({
+      hostname: '127.0.0.1', port: PORT, path: '/health',
+      method: 'GET', timeout: 5000
+    }, res => { let body=''; res.on('data',d=>body+=d); res.on('end',()=>{}); });
+    req.on('error', () => {});
+    req.end();
+  } catch(e) {}
+}, SELF_PING_INTERVAL);
+
+// 启动时恢复之前保存的房间
+loadRooms();
+
 server.listen(PORT,()=>{console.log(`台麻游戏服务器已启动: http://0.0.0.0:${PORT}`);});

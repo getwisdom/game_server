@@ -273,7 +273,45 @@ function ss(msg){try{
     gameSS=[{msg,url,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}]; // 只保留最后一次
     document.getElementById('ssCount').textContent=1;
     document.getElementById('galleryBtn').style.display='';
+    // 自动保存到手机相册/下载文件夹
+    saveImageToDevice(c, msg);
   }).catch(()=>{});}catch(e){}
+}
+
+function saveImageToDevice(canvas, label) {
+  const ts = new Date();
+  const dateStr = ts.toLocaleDateString('zh-CN').replace(/\//g,'-');
+  const timeStr = ts.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}).replace(/:/g,'');
+  const filename = '\u53f0\u9ebb_'+label+'_'+dateStr+'_'+timeStr+'.png';
+
+  // \u65b9\u5f0f1: Blob \u4e0b\u8f7d\uff08Android Chrome / \u684c\u9762\u6d4f\u89c8\u5668\uff09
+  try {
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
+    }, 'image/png');
+  } catch(e) {
+    // \u964d\u7ea7\uff1a\u5c1d\u8bd5\u6253\u5f00\u56fe\u7247\u8ba9\u7528\u6237\u957f\u6309\u4fdd\u5b58
+    try {
+      const w = window.open(canvas.toDataURL('image/png'), '_blank');
+      if (w) showToast('\uD83D\uDCF8 \u957f\u6309\u56fe\u7247\u5373\u53ef\u4fdd\u5b58');
+    } catch(e2) {}
+  }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;z-index:99999;pointer-events:none;transition:opacity 0.4s;';
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 1800);
 }
 function toggleGallery(){const g=document.getElementById('gallery');g.style.display=g.style.display==='none'?'':'none';renderGallery();}
 function renderGallery(){const g=document.getElementById('gallery');if(g.style.display==='none')return;
