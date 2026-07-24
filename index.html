@@ -445,32 +445,33 @@ function cnNumToInt(s){const map={零:0,一:1,二:2,三:3,四:4,五:5,六:6,七:
 
 // 中文语音命令解析
 function parseVoiceCmd(text) {
-  console.log("语音识别:", text);
-  if (!state || myIndex == null || myIndex < 0) return;
+  const hint = document.getElementById('voiceHint');
+  if (!state || myIndex == null || myIndex < 0) { hint.textContent = '识别: 「'+text+'」 ✗ 未进入游戏'; return; }
 
   // 1. "X号绿" → 所有玩家中数字X的那个格子变绿
   let m = text.match(/([0-9零一二三四五六七八九十]+)\s*号\s*(?:绿了|绿|进了|进)/);
   if (m) {
     const num = cnNumToInt(m[1]);
-    if (!isNaN(num)) { toggleNumberForAll(num, 'gr'); return; }
+    if (!isNaN(num)) { hint.textContent = '识别: 「'+text+'」 → '+num+'号绿'; toggleNumberForAll(num, 'gr'); return; }
   }
 
-  // 2. "昵称点炮N次" 或 "昵称点炮第N次" → 该玩家N个0号黄，其他各N个红
+  // 2. "昵称点炮N次" 或 "昵称点炮第N次"
   m = text.match(/(.{1,10})\s*点炮\s*(?:第?\s*)?([0-9零一二三四五六七八九十]+)\s*次/);
   if (m) {
     const targetName = m[1].trim();
     const count = cnNumToInt(m[2]);
-    if (!isNaN(count)) { handleDianPaoN(targetName, count); return; }
+    if (!isNaN(count)) { hint.textContent = '识别: 「'+text+'」 → '+targetName+'点炮×'+count; handleDianPaoN(targetName, count); return; }
   }
-  // 也兼容"昵称点炮"不带次数（默认1次）
+  // 兼容"昵称点炮"不带次数（默认1次）
   m = text.match(/(.{1,10})\s*点炮\s*$/);
   if (m) {
+    hint.textContent = '识别: 「'+text+'」 → '+m[1].trim()+'点炮×1';
     handleDianPaoN(m[1].trim(), 1);
     return;
   }
 
   // 未识别
-  showToast('🤔 未识别: '+text);
+  hint.textContent = '识别: 「'+text+'」 ✗ 未匹配';
 }
 
 // 在所有玩家中找数字num，切到指定颜色
