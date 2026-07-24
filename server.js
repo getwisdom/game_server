@@ -267,6 +267,8 @@ const server=http.createServer((req,res)=>{
   let url=req.url.split('?')[0];if(url==='/')url='/index.html';
   // 健康检查 — 也用于防止 Zeabur scale-to-zero
   if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,rooms:rooms.size,clients:clients.size}));return;}
+  // html2canvas 从本地 node_modules 提供，不依赖外部 CDN
+  if(url==='/html2canvas.min.js'){const fp=path.join(__dirname,'node_modules','html2canvas','dist','html2canvas.min.js');fs.readFile(fp,(err,data)=>{if(err){res.writeHead(404);res.end('Not Found');return;}res.writeHead(200,{'Content-Type':'application/javascript;charset=utf-8'});res.end(data);});return;}
   const fp=path.join(__dirname,url);
   const mime={'.html':'text/html;charset=utf-8','.js':'application/javascript;charset=utf-8','.css':'text/css;charset=utf-8'};
   fs.readFile(fp,(err,data)=>{if(err){res.writeHead(404);res.end('Not Found');return;}res.writeHead(200,{'Content-Type':mime[path.extname(fp)]||'application/octet-stream'});res.end(data);});
