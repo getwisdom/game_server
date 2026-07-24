@@ -353,9 +353,9 @@ function renderGallery(){const g=document.getElementById('gallery');if(g.style.d
   h+='</div>';g.innerHTML=h;}
 function showSS(url){document.getElementById('lbImg').src=url;document.getElementById('lightbox').style.display='flex';}
 
-// ====== 语音输入 ======
+// ====== 语音输入（免提持续监听） ======
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let voiceRec = null, voiceOn = false;
+let voiceRec = null, voiceOn = false, _lastResultIdx = 0;
 
 function toggleVoice() {
   if (!SpeechRecognition) { showToast('⚠️ 当前浏览器不支持语音'); return; }
@@ -366,28 +366,43 @@ function toggleVoice() {
 function startVoice() {
   voiceRec = new SpeechRecognition();
   voiceRec.lang = 'zh-CN';
-  voiceRec.interimResults = false;
-  voiceRec.continuous = false;
+  voiceRec.interimResults = true;
+  voiceRec.continuous = true;
+  _lastResultIdx = 0;
 
   voiceRec.onresult = (e) => {
-    const text = e.results[0][0].transcript.trim();
-    document.getElementById('voiceHint').textContent = '识别: 「'+text+'」';
-    parseVoiceCmd(text);
-    stopVoice();
+    // 取最新的识别结果
+    for (let i = _lastResultIdx; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) {
+        const text = r[0].transcript.trim();
+        document.getElementById('voiceHint').textContent = '识别: 「'+text+'」';
+        parseVoiceCmd(text);
+        _lastResultIdx = i + 1;
+      } else {
+        // 实时显示部分结果
+        document.getElementById('voiceHint').textContent = '🎤 '+r[0].transcript;
+      }
+    }
   };
 
   voiceRec.onerror = (e) => {
-    document.getElementById('voiceHint').textContent = '语音识别出错，重试';
-    stopVoice();
+    if (e.error === 'no-speech' || e.error === 'aborted') return; // 静默忽略
+    document.getElementById('voiceHint').textContent = '语音出错，自动重试...';
   };
 
-  voiceRec.onend = () => { voiceOn = false; };
+  voiceRec.onend = () => {
+    // 只要没手动停止，就自动重启继续监听
+    if (voiceOn) {
+      try { voiceRec.start(); } catch(e) { voiceOn = false; }
+    }
+  };
 
   voiceRec.start();
   voiceOn = true;
   document.getElementById('voiceHint').style.display = '';
-  document.getElementById('voiceHint').textContent = '🎤 正在听...';
-  document.getElementById('btnMic').textContent = '🔴 停止';
+  document.getElementById('voiceHint').textContent = '🎤 免提监听中...';
+  document.getElementById('btnMic').textContent = '🔴 关闭';
 }
 
 function stopVoice() {
