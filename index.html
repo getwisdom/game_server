@@ -355,10 +355,11 @@ function showSS(url){document.getElementById('lbImg').src=url;document.getElemen
 
 // ====== 语音输入（免提持续监听） ======
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let voiceRec = null, voiceOn = false, _lastResultIdx = 0, _voiceErrors = 0;
+let voiceRec = null, voiceOn = false, _lastResultIdx = 0, _voiceErrors = 0, _voiceDisabled = false;
 
 function toggleVoice() {
-  if (!SpeechRecognition) { showToast('⚠️ 当前浏览器不支持语音，请用 Chrome 打开'); return; }
+  if (!SpeechRecognition) { document.getElementById('btnMic').style.display='none'; return; }
+  if (_voiceDisabled) { showToast('⚠️ 此设备不支持语音（缺少 Google 服务）'); return; }
   if (voiceOn) { stopVoice(); return; }
   _voiceErrors = 0;
   startVoice();
@@ -395,7 +396,11 @@ function startVoice() {
         hint.textContent = '❌ 麦克风权限未授权，请在浏览器设置中开启'; stopVoice(); break;
       case 'service-not-allowed':
       case 'network':
-        hint.textContent = '❌ 语音服务不可用（需 Chrome + Google 服务）'; stopVoice(); break;
+        hint.textContent = '❌ 此设备不支持语音';
+        _voiceDisabled = true;
+        stopVoice();
+        setTimeout(() => { document.getElementById('btnMic').style.display = 'none'; }, 3000);
+        break;
       case 'no-speech':
         hint.textContent = '🎤 免提监听中...'; break;
       case 'aborted': break;
