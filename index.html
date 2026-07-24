@@ -104,7 +104,7 @@
   <div id="lightbox" onclick="this.style.display='none'"><img id="lbImg" src=""></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 const COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#a78bfa'];
 const DFLT=['玩家一','玩家二','玩家三','玩家四','玩家五'];
@@ -264,6 +264,13 @@ function isAllGreen(st,pi){const p=st.ply[pi];const need=st.pcs[pi]||0;for(let s
 
 // ====== 截图 ======
 let gameSS=[],_ssRound=null;
+
+// 检测是否在 QQ/微信等内置浏览器中（不支持 <a download>）
+function isInAppBrowser() {
+  const ua = navigator.userAgent.toLowerCase();
+  return /micromessenger|qq\//i.test(ua) && !/mqqbrowser/i.test(ua);
+}
+
 function ss(msg,silent){try{
   const rnd=state?.round;if(rnd!=null&&_ssRound===rnd)return;_ssRound=rnd;
   const el=document.getElementById('gameUI');if(!el||!window.html2canvas)return;
@@ -283,7 +290,16 @@ function saveImageToDevice(canvas, label, silent) {
   const timeStr = ts.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}).replace(/:/g,'');
   const filename = '\u53f0\u9ebb_'+label+'_'+dateStr+'_'+timeStr+'.png';
 
-  // 用 canvas.toBlob \u8f6c PNG \uff0c\u518d\u901a\u8fc7 <a download> \u4e0b\u8f7d\u5230\u624b\u673a
+  // QQ/微信内置浏览器不支持下载，改为弹窗让用户长按保存
+  if (isInAppBrowser()) {
+    const url = canvas.toDataURL('image/png');
+    document.getElementById('lbImg').src = url;
+    document.getElementById('lightbox').style.display = 'flex';
+    if (!silent) showToast('\uD83D\uDCF8 \u957f\u6309\u56fe\u7247\u4fdd\u5b58\u5230\u76f8\u518c');
+    return;
+  }
+
+  // 普通浏览器：通过 <a download> 直接下载到手机
   canvas.toBlob(blob => {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
