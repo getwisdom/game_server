@@ -90,7 +90,7 @@
   <div id="gameUI" style="display:none">
     <div class="status-bar" id="statusBar"></div>
     <div class="btn-row">
-      <button class="btn btn-a" id="btnA" onclick="fb();send('assign')" disabled>分配</button>
+      <button class="btn btn-a" id="btnA" onclick="fb();ss('第'+(state?.round||0)+'局',true);send('assign')" disabled>分配</button>
       <button class="btn btn-l" id="btnL" onclick="fb();send('light')" disabled>亮号</button>
       <button class="btn btn-p" id="btnP" onclick="fb();if(state&&state.historyPos===-1)ss('上局_第'+(state?.round||0)+'局');send('prev')" disabled>上局</button>
       <button class="btn btn-n" id="btnN" onclick="fb();if(state&&state.historyPos===-1)ss('下局_第'+(state?.round||0)+'局');send('next')" disabled>下局</button>
@@ -262,11 +262,8 @@ function calcScores(ply,pcs){
 function isAllGreen(st,pi){const p=st.ply[pi];const need=st.pcs[pi]||0;for(let si=0;si<need;si++){if(p.cs[si]==='bk')return false;}return true;}
 
 // ====== 截图 ======
-let gameSS=[],_ssRound=null;
-function ss(msg){try{
-  const rnd=state?.round;
-  if(_ssRound===rnd)return; // 每轮只截一次
-  _ssRound=rnd;
+let gameSS=[];
+function ss(msg,silent){try{
   const el=document.getElementById('gameUI');if(!el||!window.html2canvas)return;
   html2canvas(el,{scale:2,backgroundColor:'#1a1a2e',useCORS:true,allowTaint:true,logging:false}).then(c=>{
     const url=c.toDataURL('image/png');
@@ -274,11 +271,11 @@ function ss(msg){try{
     document.getElementById('ssCount').textContent=1;
     document.getElementById('galleryBtn').style.display='';
     // 自动保存到手机相册/下载文件夹
-    saveImageToDevice(c, msg);
+    saveImageToDevice(c, msg, silent);
   }).catch(()=>{});}catch(e){}
 }
 
-function saveImageToDevice(canvas, label) {
+function saveImageToDevice(canvas, label, silent) {
   const ts = new Date();
   const dateStr = ts.toLocaleDateString('zh-CN').replace(/\//g,'-');
   const timeStr = ts.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}).replace(/:/g,'');
@@ -295,7 +292,7 @@ function saveImageToDevice(canvas, label) {
       // \u6210\u529f\u6253\u5f00\uff0cChrome/Android \u4f1a\u81ea\u52a8\u4e0b\u8f7d\u5230 Downloads
       setTimeout(() => { try { w.close(); } catch(e) {} }, 500);
       setTimeout(() => URL.revokeObjectURL(url), 3000);
-      showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
+      if (!silent) showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
       return;
     }
 
@@ -308,7 +305,7 @@ function saveImageToDevice(canvas, label) {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 3000);
-    showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
+    if (!silent) showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
   }, 'image/png');
 }
 
