@@ -92,7 +92,7 @@
   <div id="gameUI" style="display:none">
     <div class="status-bar" id="statusBar"></div>
     <div class="btn-row">
-      <button class="btn btn-a" id="btnA" onclick="fb();ss('第'+(state?.round||0)+'局',true);send('assign')" disabled>分配</button>
+      <button class="btn btn-a" id="btnA" onclick="fb();send('assign')" disabled>分配</button>
       <button class="btn btn-l" id="btnL" onclick="fb();send('light')" disabled>亮号</button>
       <button class="btn btn-p" id="btnP" onclick="fb();if(state&&state.historyPos===-1)ss('上局_第'+(state?.round||0)+'局');send('prev')" disabled>上局</button>
       <button class="btn btn-n" id="btnN" onclick="fb();if(state&&state.historyPos===-1)ss('下局_第'+(state?.round||0)+'局');send('next')" disabled>下局</button>
