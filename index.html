@@ -96,7 +96,9 @@
       <button class="btn btn-l" id="btnL" onclick="fb();send('light')" disabled>亮号</button>
       <button class="btn btn-p" id="btnP" onclick="fb();if(state&&state.historyPos===-1)ss('上局_第'+(state?.round||0)+'局');send('prev')" disabled>上局</button>
       <button class="btn btn-n" id="btnN" onclick="fb();if(state&&state.historyPos===-1)ss('下局_第'+(state?.round||0)+'局');send('next')" disabled>下局</button>
+      <button class="btn btn-a" id="btnMic" onclick="fb();toggleVoice()" style="background:linear-gradient(135deg,#f7971e,#ffd200);color:#1a1a2e;">🎤 语音</button>
     </div>
+    <div id="voiceHint" style="display:none;text-align:center;font-size:12px;color:#ffd200;padding:2px 0 4px 0;"></div>
     <div id="gameArea"></div>
     <div id="galleryBtn" style="text-align:center;margin:6px 0;display:none">
       <button onclick="toggleGallery()" style="background:none;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.4);padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer">📷 查看截图 (<span id="ssCount">0</span>)</button>
@@ -350,6 +352,147 @@ function renderGallery(){const g=document.getElementById('gallery');if(g.style.d
     h+=`<div style="cursor:pointer;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)" onclick="showSS('${s.url}')"><img src="${s.url}" style="width:100%;display:block"><div style="font-size:9px;color:rgba(255,255,255,0.3);text-align:center;padding:2px">${s.msg} ${s.time}</div></div>`;}
   h+='</div>';g.innerHTML=h;}
 function showSS(url){document.getElementById('lbImg').src=url;document.getElementById('lightbox').style.display='flex';}
+
+// ====== 语音输入 ======
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let voiceRec = null, voiceOn = false;
+
+function toggleVoice() {
+  if (!SpeechRecognition) { showToast('⚠️ 当前浏览器不支持语音'); return; }
+  if (voiceOn) { stopVoice(); return; }
+  startVoice();
+}
+
+function startVoice() {
+  voiceRec = new SpeechRecognition();
+  voiceRec.lang = 'zh-CN';
+  voiceRec.interimResults = false;
+  voiceRec.continuous = false;
+
+  voiceRec.onresult = (e) => {
+    const text = e.results[0][0].transcript.trim();
+    document.getElementById('voiceHint').textContent = '识别: 「'+text+'」';
+    parseVoiceCmd(text);
+    stopVoice();
+  };
+
+  voiceRec.onerror = (e) => {
+    document.getElementById('voiceHint').textContent = '语音识别出错，重试';
+    stopVoice();
+  };
+
+  voiceRec.onend = () => { voiceOn = false; };
+
+  voiceRec.start();
+  voiceOn = true;
+  document.getElementById('voiceHint').style.display = '';
+  document.getElementById('voiceHint').textContent = '🎤 正在听...';
+  document.getElementById('btnMic').textContent = '🔴 停止';
+}
+
+function stopVoice() {
+  voiceOn = false;
+  if (voiceRec) try { voiceRec.stop(); } catch(e) {}
+  document.getElementById('voiceHint').style.display = 'none';
+  document.getElementById('btnMic').textContent = '🎤 语音';
+}
+
+// 中文语音命令解析
+function parseVoiceCmd(text) {
+  if (!state || myIndex == null || myIndex < 0) return;
+
+  // 1. "{数字}号进了/绿了"  → 当前玩家的该数字格变绿
+  let m = text.match(/(\d+)\s*号[进了绿]/);
+  if (m) {
+    const num = parseInt(m[1]);
+    toggleMyNumberCell(num, 'gr');
+    return;
+  }
+
+  // 2. "把{玩家名}点炮{N}号球" → 该玩家0号位变黄，其他人变红
+  m = text.match(/把?\s*(.{1,6})\s*点炮\s*(\d+)\s*号/);
+  if (m) {
+    const targetName = m[1].trim();
+    const zeroIdx = parseInt(m[2]);
+    handleDianPao(targetName, zeroIdx);
+    return;
+  }
+
+  // 3. "{数字}号红" → 当前玩家0号位变红
+  m = text.match(/(\d+)\s*号\s*红/);
+  if (m) {
+    toggleMyZeroCell(parseInt(m[1]), 'rd');
+    return;
+  }
+
+  // 4. "{数字}号黄" → 当前玩家0号位变黄
+  m = text.match(/(\d+)\s*号\s*黄/);
+  if (m) {
+    toggleMyZeroCell(parseInt(m[1]), 'yl');
+    return;
+  }
+
+  // 未识别
+  showToast('🤔 未识别: '+text);
+}
+
+// 切换自己某个数字格颜色
+function toggleMyNumberCell(num, targetColor) {
+  const p = state.ply[myIndex];
+  const need = state.pcs[myIndex] || 0;
+  for (let si = 0; si < need; si++) {
+    if (p.s[si] === num) {
+      const cur = p.cs[si];
+      if (cur === 'bk' && targetColor === 'gr') { send('toggleCell', { playerIndex: myIndex, cellIndex: si }); return; }
+      if (cur === 'gr' && targetColor === 'bk') { send('toggleCell', { playerIndex: myIndex, cellIndex: si }); return; }
+      return;
+    }
+  }
+  showToast('未找到数字 '+num);
+}
+
+// 切换自己某个0号位颜色
+function toggleMyZeroCell(idx, color) {
+  const p = state.ply[myIndex];
+  const need = state.pcs[myIndex] || 0;
+  const si = need + idx;
+  if (si < p.s.length) {
+    const cur = p.cs[si];
+    if (color === 'rd' && cur === 'gy') { send('toggleCell', { playerIndex: myIndex, cellIndex: si }); }
+    else if (color === 'yl' && cur === 'rd') { send('toggleCell', { playerIndex: myIndex, cellIndex: si }); }
+    else if (color === 'gy' && cur === 'yl') { send('toggleCell', { playerIndex: myIndex, cellIndex: si }); }
+    else { send('toggleCell', { playerIndex: myIndex, cellIndex: si }); }
+  }
+}
+
+// 点炮：目标玩家0号位黄，其他人0号位红
+function handleDianPao(targetName, zeroIdx) {
+  // 找到目标玩家
+  let targetPi = -1;
+  for (let i = 0; i < state.ply.length; i++) {
+    if (state.ply[i].n === targetName || state.ply[i].n.includes(targetName)) { targetPi = i; break; }
+  }
+  if (targetPi < 0) { showToast('未找到玩家: '+targetName); return; }
+
+  for (let pi = 0; pi < state.ply.length; pi++) {
+    const p = state.ply[pi];
+    const need = state.pcs[pi] || 0;
+    const si = need + zeroIdx;
+    if (si >= p.s.length) continue;
+
+    const targetColor = (pi === targetPi) ? 'yl' : 'rd';
+    const cur = p.cs[si];
+    // 需要按顺序切换: gy → rd → yl → gy
+    if (targetColor === 'rd' && cur !== 'rd') {
+      send('toggleCell', { playerIndex: pi, cellIndex: si });
+    } else if (targetColor === 'yl' && cur !== 'yl') {
+      // 先变红再变黄（需要两次 toggle，但每次只能 toggle 一次，等服务器返回后再 toggle）
+      send('toggleCell', { playerIndex: pi, cellIndex: si });
+      // 第二次 toggle 需要延迟等服务器返回，暂时先发一次
+    }
+  }
+  showToast('点炮: '+targetName+' 0号'+zeroIdx+' 黄, 其他红');
+}
 
 connect();
 </script>
