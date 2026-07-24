@@ -262,8 +262,9 @@ function calcScores(ply,pcs){
 function isAllGreen(st,pi){const p=st.ply[pi];const need=st.pcs[pi]||0;for(let si=0;si<need;si++){if(p.cs[si]==='bk')return false;}return true;}
 
 // ====== 截图 ======
-let gameSS=[];
+let gameSS=[],_ssRound=null;
 function ss(msg,silent){try{
+  const rnd=state?.round;if(rnd!=null&&_ssRound===rnd)return;_ssRound=rnd;
   const el=document.getElementById('gameUI');if(!el||!window.html2canvas)return;
   html2canvas(el,{scale:2,backgroundColor:'#1a1a2e',useCORS:true,allowTaint:true,logging:false}).then(c=>{
     const url=c.toDataURL('image/png');
