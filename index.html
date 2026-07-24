@@ -447,39 +447,81 @@ function cnNumToInt(s){const map={零:0,一:1,二:2,三:3,四:4,五:5,六:6,七:
 function parseVoiceCmd(text) {
   if (!state || myIndex == null || myIndex < 0) return;
 
-  // 1. "{数字}号进了/绿了"  → 当前玩家的该数字格变绿
-  let m = text.match(/(\d+)\s*号(?:进了|绿了|绿|进)/);
+  // 1. "X号绿" → 所有玩家中数字X的那个格子变绿
+  let m = text.match(/([0-9零一二三四五六七八九十]+)\s*号\s*(?:绿了|绿|进了|进)/);
   if (m) {
     const num = cnNumToInt(m[1]);
-    toggleMyNumberCell(num, 'gr');
-    return;
+    if (!isNaN(num)) { toggleNumberForAll(num, 'gr'); return; }
   }
 
-  // 2. "把{玩家名}点炮{N}号球" → 该玩家0号位变黄，其他人变红
-  m = text.match(/把?\s*(.{1,6})\s*点炮\s*(\d+)\s*号/);
+  // 2. "昵称点炮N次" 或 "昵称点炮第N次" → 该玩家N个0号黄，其他各N个红
+  m = text.match(/(.{1,10})\s*点炮\s*(?:第?\s*)?([0-9零一二三四五六七八九十]+)\s*次/);
   if (m) {
     const targetName = m[1].trim();
-    const zeroIdx = cnNumToInt(m[2]);
-    handleDianPao(targetName, zeroIdx);
-    return;
+    const count = cnNumToInt(m[2]);
+    if (!isNaN(count)) { handleDianPaoN(targetName, count); return; }
   }
-
-  // 3. "{数字}号红" → 当前玩家0号位变红
-  m = text.match(/(\d+)\s*号\s*红/);
+  // 也兼容"昵称点炮"不带次数（默认1次）
+  m = text.match(/(.{1,10})\s*点炮\s*$/);
   if (m) {
-    toggleMyZeroCell(cnNumToInt(m[1]), 'rd');
-    return;
-  }
-
-  // 4. "{数字}号黄" → 当前玩家0号位变黄
-  m = text.match(/(\d+)\s*号\s*黄/);
-  if (m) {
-    toggleMyZeroCell(cnNumToInt(m[1]), 'yl');
+    handleDianPaoN(m[1].trim(), 1);
     return;
   }
 
   // 未识别
   showToast('🤔 未识别: '+text);
+}
+
+// 在所有玩家中找数字num，切到指定颜色
+function toggleNumberForAll(num, color) {
+  for (let pi = 0; pi < state.ply.length; pi++) {
+    const p = state.ply[pi];
+    const need = state.pcs[pi] || 0;
+    for (let si = 0; si < need; si++) {
+      if (p.s[si] === num) {
+        send('toggleCell', { playerIndex: pi, cellIndex: si });
+        return;
+      }
+    }
+  }
+  showToast('未找到数字 '+num);
+}
+
+// 点炮N次：目标玩家N个0号变黄，其他玩家各N个变红
+function handleDianPaoN(targetName, count) {
+  let targetPi = -1;
+  for (let i = 0; i < state.ply.length; i++) {
+    if (state.ply[i].n === targetName || state.ply[i].n.includes(targetName)) { targetPi = i; break; }
+  }
+  if (targetPi < 0) { showToast('未找到玩家: '+targetName); return; }
+
+  // 找到当前已黄的0号数量，从下一个开始（支持累积点炮）
+  let startIdx = 0;
+  const tp = state.ply[targetPi];
+  const tneed = state.pcs[targetPi] || 0;
+  for (let si = tneed; si < tp.s.length; si++) {
+    if (tp.cs[si] === 'yl') startIdx++;
+    else break;
+  }
+
+  for (let pi = 0; pi < state.ply.length; pi++) {
+    const p = state.ply[pi];
+    const need = state.pcs[pi] || 0;
+    for (let n = 0; n < count; n++) {
+      const si = need + startIdx + n;
+      if (si >= p.s.length) continue;
+      const cur = p.cs[si];
+      if (pi === targetPi) {
+        // 目标玩家: gy→rd→yl (两下)
+        send('toggleCell', { playerIndex: pi, cellIndex: si });
+        setTimeout(() => send('toggleCell', { playerIndex: pi, cellIndex: si }), 80);
+      } else {
+        // 其他玩家: gy→rd (一下)
+        if (cur === 'gy') send('toggleCell', { playerIndex: pi, cellIndex: si });
+      }
+    }
+  }
+  showToast('点炮: '+targetName+' ×'+count);
 }
 
 // 切换自己某个数字格颜色
