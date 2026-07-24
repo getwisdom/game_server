@@ -303,7 +303,7 @@ function saveImageToDevice(canvas, label, silent) {
     return;
   }
 
-  // 普通浏览器：iframe + octet-stream 触发静默下载（无需用户手势）
+  // 普通浏览器：octet-stream Blob + window.open 触发静默下载
   const dataUrl = canvas.toDataURL('image/png');
   const base64 = dataUrl.split(',')[1];
   const bytes = atob(base64);
@@ -312,14 +312,19 @@ function saveImageToDevice(canvas, label, silent) {
   const blob = new Blob([arr], { type: 'application/octet-stream' });
   const blobUrl = URL.createObjectURL(blob);
 
-  // 同时用 <a download> 设置文件名
-  const a = document.createElement('a');
-  a.href = blobUrl;
-  a.download = filename;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 2000);
+  // window.open 打开 octet-stream → 浏览器无法显示 → 自动下载
+  const w = window.open(blobUrl, '_blank');
+  if (w) {
+    setTimeout(() => { try { w.close(); } catch(e) {} }, 600);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+  } else {
+    // 弹窗被拦截时降级：iframe 触发下载
+    const ifr = document.createElement('iframe');
+    ifr.style.display = 'none';
+    ifr.src = blobUrl;
+    document.body.appendChild(ifr);
+    setTimeout(() => { document.body.removeChild(ifr); URL.revokeObjectURL(blobUrl); }, 5000);
+  }
   if (!silent) showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
 }
 
