@@ -445,6 +445,7 @@ function cnNumToInt(s){const map={零:0,一:1,二:2,三:3,四:4,五:5,六:6,七:
 
 // 中文语音命令解析
 function parseVoiceCmd(text) {
+  console.log("语音识别:", text);
   if (!state || myIndex == null || myIndex < 0) return;
 
   // 1. "X号绿" → 所有玩家中数字X的那个格子变绿
