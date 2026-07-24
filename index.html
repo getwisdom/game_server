@@ -104,6 +104,7 @@
   <div id="lightbox" onclick="this.style.display='none'"><img id="lbImg" src=""></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 const COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#a78bfa'];
 const DFLT=['玩家一','玩家二','玩家三','玩家四','玩家五'];
@@ -282,30 +283,18 @@ function saveImageToDevice(canvas, label, silent) {
   const timeStr = ts.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}).replace(/:/g,'');
   const filename = '\u53f0\u9ebb_'+label+'_'+dateStr+'_'+timeStr+'.png';
 
-  // 用 Blob URL + window.open \u5b9e\u73b0\u9759\u9ed8\u4e0b\u8f7d\uff08\u65e0\u786e\u8ba4\u5f39\u7a97\uff09
+  // 用 canvas.toBlob \u8f6c PNG \uff0c\u518d\u901a\u8fc7 <a download> \u4e0b\u8f7d\u5230\u624b\u673a
   canvas.toBlob(blob => {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
-
-    // \u65b9\u6cd51: window.open \u89e6\u53d1\u6d4f\u89c8\u5668\u81ea\u52a8\u4e0b\u8f7d\uff0c\u65e0\u7528\u6237\u786e\u8ba4
-    const w = window.open(url, '_blank');
-    if (w) {
-      // \u6210\u529f\u6253\u5f00\uff0cChrome/Android \u4f1a\u81ea\u52a8\u4e0b\u8f7d\u5230 Downloads
-      setTimeout(() => { try { w.close(); } catch(e) {} }, 500);
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
-      if (!silent) showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
-      return;
-    }
-
-    // \u65b9\u6cd52: \u964d\u7ea7 a \u6807\u7b7e\u4e0b\u8f7d\uff08\u88ab\u5f39\u7a97\u62e6\u622a\u65f6\uff09
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    // \u5ef6\u8fdf\u6e05\u7406\uff0c\u786e\u4fdd\u6d4f\u89c8\u5668\u5df2\u5f00\u59cb\u4e0b\u8f7d
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
     if (!silent) showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
   }, 'image/png');
 }
@@ -327,6 +316,5 @@ function showSS(url){document.getElementById('lbImg').src=url;document.getElemen
 
 connect();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </body>
 </html>
