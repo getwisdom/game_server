@@ -299,20 +299,16 @@ function saveImageToDevice(canvas, label, silent) {
     return;
   }
 
-  // 普通浏览器：通过 <a download> 直接下载到手机
-  canvas.toBlob(blob => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    // \u5ef6\u8fdf\u6e05\u7406\uff0c\u786e\u4fdd\u6d4f\u89c8\u5668\u5df2\u5f00\u59cb\u4e0b\u8f7d
-    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
-    if (!silent) showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
-  }, 'image/png');
+  // 普通浏览器：通过 <a download> 直接下载到手机（toDataURL 同步，不丢用户手势）
+  const dataUrl = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => document.body.removeChild(a), 1000);
+  if (!silent) showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
 }
 
 function showToast(msg) {
