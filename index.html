@@ -284,26 +284,32 @@ function saveImageToDevice(canvas, label) {
   const timeStr = ts.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}).replace(/:/g,'');
   const filename = '\u53f0\u9ebb_'+label+'_'+dateStr+'_'+timeStr+'.png';
 
-  // \u65b9\u5f0f1: Blob \u4e0b\u8f7d\uff08Android Chrome / \u684c\u9762\u6d4f\u89c8\u5668\uff09
-  try {
-    canvas.toBlob(blob => {
-      if (!blob) return;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  // 用 Blob URL + window.open \u5b9e\u73b0\u9759\u9ed8\u4e0b\u8f7d\uff08\u65e0\u786e\u8ba4\u5f39\u7a97\uff09
+  canvas.toBlob(blob => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+
+    // \u65b9\u6cd51: window.open \u89e6\u53d1\u6d4f\u89c8\u5668\u81ea\u52a8\u4e0b\u8f7d\uff0c\u65e0\u7528\u6237\u786e\u8ba4
+    const w = window.open(url, '_blank');
+    if (w) {
+      // \u6210\u529f\u6253\u5f00\uff0cChrome/Android \u4f1a\u81ea\u52a8\u4e0b\u8f7d\u5230 Downloads
+      setTimeout(() => { try { w.close(); } catch(e) {} }, 500);
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
       showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
-    }, 'image/png');
-  } catch(e) {
-    // \u964d\u7ea7\uff1a\u5c1d\u8bd5\u6253\u5f00\u56fe\u7247\u8ba9\u7528\u6237\u957f\u6309\u4fdd\u5b58
-    try {
-      const w = window.open(canvas.toDataURL('image/png'), '_blank');
-      if (w) showToast('\uD83D\uDCF8 \u957f\u6309\u56fe\u7247\u5373\u53ef\u4fdd\u5b58');
-    } catch(e2) {}
-  }
+      return;
+    }
+
+    // \u65b9\u6cd52: \u964d\u7ea7 a \u6807\u7b7e\u4e0b\u8f7d\uff08\u88ab\u5f39\u7a97\u62e6\u622a\u65f6\uff09
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    showToast('\uD83D\uDCF8 \u5df2\u4fdd\u5b58\u5230\u76f8\u518c');
+  }, 'image/png');
 }
 
 function showToast(msg) {
