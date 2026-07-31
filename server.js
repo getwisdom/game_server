@@ -319,11 +319,11 @@ wss.on('close', () => clearInterval(heartbeatTimer));
 const persistTimer = setInterval(saveRooms, 30000);
 
 // 自保活：每5分钟自检一次，防止 Zeabur 缩容到零
-const SELF_PING_INTERVAL = 5 * 60 * 1000;
+const SELF_PING_INTERVAL = 2 * 60 * 1000; // 每2分钟自检
 const selfPingTimer = setInterval(() => {
   try {
     const req = http.request({
-      hostname: '127.0.0.1', port: PORT, path: '/health',
+      hostname: '0.0.0.0', port: PORT, path: '/health',
       method: 'GET', timeout: 5000
     }, res => { let body=''; res.on('data',d=>body+=d); res.on('end',()=>{}); });
     req.on('error', () => {});
@@ -334,4 +334,8 @@ const selfPingTimer = setInterval(() => {
 // 启动时恢复之前保存的房间
 loadRooms();
 
+
+// 防止未捕获异常导致进程崩溃
+process.on('uncaughtException', (err) => { console.error('未捕获异常:', err.message); });
+process.on('unhandledRejection', (reason) => { console.error('未处理的Promise拒绝:', reason); });
 server.listen(PORT,()=>{console.log(`台麻游戏服务器已启动: http://0.0.0.0:${PORT}`);});
