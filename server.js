@@ -16,9 +16,9 @@ function saveRooms() {
       data[code]._savedAt = Date.now();
     });
     if (Object.keys(data).length > 0) {
-      fs.writeFileSync(ROOMS_FILE, JSON.stringify(data), 'utf8');
+      fs.writeFileSync(ROOMS_FILE, JSON.stringify(data), 'utf8');console.log(`💾 已备份 ${Object.keys(data).length} 个房间`);
     }
-  } catch (e) { /* 静默失败 */ }
+  } catch (e) { console.error('保存房间失败:', e.message); }
 }
 
 function loadRooms() {
@@ -42,7 +42,7 @@ function loadRooms() {
       console.log(`📦 已恢复 ${restored} 个房间`);
       fs.unlinkSync(ROOMS_FILE);
     }
-  } catch (e) { console.log('恢复房间数据失败:', e.message); }
+  } catch (e) { console.error('恢复房间失败:', e.message); }
 }
 
 const DFLT = ['玩家一','玩家二','玩家三','玩家四','玩家五'];
@@ -198,7 +198,7 @@ function handleMessage(client, msg) {
       const st=newRoom(mode);initPlayers(st);
       st.ply[0].n=msg.name||DFLT[0];st.multi=parseFloat(msg.multi)||1;
       st._seats={};st._seats[msg.name||DFLT[0]]=0;
-      rooms.set(code,st);
+      rooms.set(code,st);console.log(`🏠 房间 ${code} 已创建 (${MODE[mode].count}人)`);
       client.roomCode=code;client.playerIndex=0;
       client.ws.send(JSON.stringify({type:'joined',roomCode:code,playerIndex:0,state:stateForClient(code)}));
       broadcast(code,{type:'state',state:stateForClient(code)});
@@ -267,6 +267,20 @@ const server=http.createServer((req,res)=>{
   let url=req.url.split('?')[0];if(url==='/')url='/index.html';
   // 健康检查 — 也用于防止 Zeabur scale-to-zero
   if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,rooms:rooms.size,clients:clients.size}));return;}
+  if(url==='/status'){
+    const mem=process.memoryUsage();
+    res.writeHead(200,{'Content-Type':'application/json'});
+    res.end(JSON.stringify({
+      uptime:Math.round(process.uptime()),
+      memMB:Math.round(mem.heapUsed/1024/1024*100)/100,
+      memTotalMB:Math.round(mem.heapTotal/1024/1024*100)/100,
+      rooms:rooms.size,
+      clients:clients.size,
+      wssClients:wss.clients.size,
+      roomsDetail:Array.from(rooms.entries()).map(([code,st])=>({code,round:st.round,players:st.ply.length,done:st.done,lit:st.lit}))
+    }));
+    return;
+  }
   // html2canvas 从本地 node_modules 提供，不依赖外部 CDN
   if(url==='/html2canvas.min.js'){const fp=path.join(__dirname,'node_modules','html2canvas','dist','html2canvas.min.js');fs.readFile(fp,(err,data)=>{if(err){res.writeHead(404);res.end('Not Found');return;}res.writeHead(200,{'Content-Type':'application/javascript;charset=utf-8'});res.end(data);});return;}
   const fp=path.join(__dirname,url);
@@ -297,7 +311,7 @@ wss.on('connection',(ws)=>{
         // 没人了 — 先持久化，再设置5小时清理
         saveRooms();
         if(!rooms.get(rc)._emptyTimer)
-          rooms.get(rc)._emptyTimer=setTimeout(()=>{rooms.delete(rc);},5*60*60*1000);
+          rooms.get(rc)._emptyTimer=setTimeout(()=>{rooms.delete(rc);console.log(`🗑 房间 ${rc} 超时清理`);},5*60*60*1000);
       }else{
         broadcast(rc,{type:'state',state:stateForClient(rc)});
       }
@@ -307,6 +321,8 @@ wss.on('connection',(ws)=>{
 
 // 定时保活 ping（不主动断连，TCP 层自然检测死连接）
 const heartbeatTimer = setInterval(() => {
+  // 清理已断开的 ws（防御性清理）
+  clients.forEach((v,ws)=>{if(ws.readyState===3)clients.delete(ws);});
   wss.clients.forEach(ws => {
     ws.isAlive = false;
     ws.ping();
