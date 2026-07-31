@@ -5,6 +5,31 @@ const { WebSocketServer } = require('ws');
 
 // ====== 房间持久化 ======
 const ROOMS_FILE = path.join(__dirname, 'rooms_backup.json');
+// ====== 服务器日志 ======
+const LOG_FILE = path.join(__dirname, 'server.log');
+const MAX_LOG_SIZE = 5 * 1024 * 1024; // 5MB
+const LOG_KEEP_LINES = 2000; // 只保留最近2000行
+
+function log(level, msg) {
+  const ts = new Date().toISOString();
+  const line = '['+ts+'] ['+level+'] '+msg;
+  console.log(line);
+  try {
+    fs.appendFileSync(LOG_FILE, line+'\n', 'utf8');
+    // 日志超过5MB时裁剪保留最近2000行
+    const stat = fs.statSync(LOG_FILE);
+    if (stat.size > MAX_LOG_SIZE) {
+      const lines = fs.readFileSync(LOG_FILE, 'utf8').split('\n').filter(l=>l);
+      const keep = lines.slice(-LOG_KEEP_LINES);
+      fs.writeFileSync(LOG_FILE, keep.join('\n')+'\n', 'utf8');
+      console.log('📝 日志已裁剪，保留最近'+LOG_KEEP_LINES+'行');
+    }
+  } catch(e) {}
+}
+function logGame(code, round, msg) {
+  log('GAME', '[房间'+code+'] [第'+round+'局] '+msg);
+}
+
 
 function saveRooms() {
   try {
@@ -39,7 +64,7 @@ function loadRooms() {
         rooms.set(code, st);
         restored++;
       }
-      console.log(`📦 已恢复 ${restored} 个房间`);
+      const restoreMsg=`📦 已恢复 ${restored} 个房间`;console.log(restoreMsg);log('SYS',restoreMsg);
       fs.unlinkSync(ROOMS_FILE);
     }
   } catch (e) { console.error('恢复房间失败:', e.message); }
@@ -141,6 +166,9 @@ function doAssign(st){
     st.history.push({ply:st.ply.map(p=>({s:[...p.s],cs:[...p.cs]})),pcs:[...st.pcs],cum:[...st.cum],round:st.round-1,assignCount:st.assignCount-1});
     const ps=calcScores(st.ply,st.pcs);
     for(let i=0;i<ps.length;i++)st.cum[i]=(st.cum[i]||0)+ps[i];
+    // 记录每局结果
+    const scoreStr=st.ply.map((p,i)=>p.n+':得分'+ps[i]+' 累计'+st.cum[i]).join(', ');
+    log('SCORE',`[房间${st._roomCode||'?'}] 第${st.round-1}局结算: ${scoreStr}`);
   }
   st.ply.forEach(p=>{p.s=[];p.cs=[];});
   st.done=false;st.lit=false;st.ended=false;
@@ -198,7 +226,7 @@ function handleMessage(client, msg) {
       const st=newRoom(mode);initPlayers(st);
       st.ply[0].n=msg.name||DFLT[0];st.multi=parseFloat(msg.multi)||1;
       st._seats={};st._seats[msg.name||DFLT[0]]=0;
-      rooms.set(code,st);console.log(`🏠 房间 ${code} 已创建 (${MODE[mode].count}人)`);
+      rooms.set(code,st);st._roomCode=code;const mc=MODE[mode];log("ROOM",`房间 ${code} 已创建 (${mc.count}人模式, 倍率${st.multi})`);
       client.roomCode=code;client.playerIndex=0;
       client.ws.send(JSON.stringify({type:'joined',roomCode:code,playerIndex:0,state:stateForClient(code)}));
       broadcast(code,{type:'state',state:stateForClient(code)});
@@ -226,6 +254,7 @@ function handleMessage(client, msg) {
       if(st._emptyTimer){clearTimeout(st._emptyTimer);st._emptyTimer=null;}
       client.ws.send(JSON.stringify({type:'joined',roomCode:code,playerIndex:pi,state:stateForClient(code)}));
       broadcast(code,{type:'state',state:stateForClient(code)});
+      log('ROOM',`房间 ${code}: ${st.ply[pi].n} 加入 (座位${pi})`);
       break;
     }
     case 'toggleCell':
@@ -267,6 +296,7 @@ const server=http.createServer((req,res)=>{
   let url=req.url.split('?')[0];if(url==='/')url='/index.html';
   // 健康检查 — 也用于防止 Zeabur scale-to-zero
   if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,rooms:rooms.size,clients:clients.size}));return;}
+  if(url==='/logs'){res.writeHead(200,{'Content-Type':'text/plain;charset=utf-8','Content-Disposition':'attachment;filename=server.log'});try{const logData=fs.readFileSync(LOG_FILE,'utf8');res.end(logData);}catch(e){res.end('暂无日志');}return;}
   if(url==='/status'){
     const mem=process.memoryUsage();
     res.writeHead(200,{'Content-Type':'application/json'});
@@ -311,7 +341,7 @@ wss.on('connection',(ws)=>{
         // 没人了 — 先持久化，再设置5小时清理
         saveRooms();
         if(!rooms.get(rc)._emptyTimer)
-          rooms.get(rc)._emptyTimer=setTimeout(()=>{rooms.delete(rc);console.log(`🗑 房间 ${rc} 超时清理`);},5*60*60*1000);
+          rooms.get(rc)._emptyTimer=setTimeout(()=>{const st=rooms.get(rc);const r=st?st.round:'?';rooms.delete(rc);log('ROOM',`房间 ${rc} 超时清理 (进行了${r}局)`);},5*60*60*1000);
       }else{
         broadcast(rc,{type:'state',state:stateForClient(rc)});
       }
@@ -354,4 +384,4 @@ loadRooms();
 // 防止未捕获异常导致进程崩溃
 process.on('uncaughtException', (err) => { console.error('未捕获异常:', err.message); });
 process.on('unhandledRejection', (reason) => { console.error('未处理的Promise拒绝:', reason); });
-server.listen(PORT,()=>{console.log(`台麻游戏服务器已启动: http://0.0.0.0:${PORT}`);});
+server.listen(PORT,()=>{const msg=`台麻游戏服务器已启动: http://0.0.0.0:${PORT}`;console.log(msg);log('SYS',msg);});
